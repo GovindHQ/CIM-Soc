@@ -1,2 +1,22 @@
 cim_sim/~$mulator.docx
 cim_sim/simulator.docx
+# Ignore everything
+*
+
+# But allow directories
+!*/
+
+# Allow Python files
+!*.py
+
+# Allow README files
+!README
+!README.*
+
+# Allow Excel files
+!*.xlsx
+!*.xls
+
+# Ignore Python caches explicitly
+__pycache__/
+*.py[cod]
