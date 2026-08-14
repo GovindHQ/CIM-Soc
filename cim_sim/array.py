@@ -125,11 +125,14 @@ class CIMConfig:
     adc_vref: float = 0.6   # volts, unipolar full-scale reference
 
     def __post_init__(self):
-        if self.planes != 1 or self.n_arrays != 1:
+        if self.planes != 1:
             raise NotImplementedError(
-                "This model is deliberately single-array, single-plane. "
-                "Set planes=1, n_arrays=1."
+                "This model is deliberately single-plane. Set planes=1."
             )
+        # n_arrays is descriptive here: CIMArray itself always models exactly
+        # ONE 32x32 macro regardless of this field's value. Multiple macros are
+        # built by the caller as `[CIMArray(cfg) for _ in range(cfg.n_arrays)]`
+        # and scheduled across output tiles by matmul.py's cim_matmul(arrays=...).
 
 
 # --------------------------------------------------------------------------- #
