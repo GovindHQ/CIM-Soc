@@ -159,11 +159,11 @@ def run_full(cfg: CIMConfig, n_images: int, cim_out_proj: bool) -> None:
     x = synthetic_images(n_images)
 
     with torch.no_grad():
-        ref_logits = model(x)
+        ref_logits = model(x) #reference normal floating point output in ref_logits
 
     array = CIMArray(cfg)
     log = TraceLog()
-    replaced = convert_attention(model, array, log=log, cim_out_proj=cim_out_proj)
+    replaced = convert_attention(model, array, log=log, cim_out_proj=cim_out_proj) #replace attention with cimattention
     print(f"replaced {len(replaced)} attention modules:")
     for r in replaced:
         print(f"    {r}")
@@ -178,7 +178,7 @@ def run_full(cfg: CIMConfig, n_images: int, cim_out_proj: bool) -> None:
     print("=" * 78)
     print("ACCURACY  (synthetic inputs — see the caveat in the docstring)")
     print("=" * 78)
-    ref_top = ref_logits.argmax(-1)
+    ref_top = ref_logits.argmax(-1) #to check with has the highest score
     cim_top = cim_logits.argmax(-1)
     for i in range(x.shape[0]):
         r, c = ref_logits[i], cim_logits[i]
