@@ -82,6 +82,8 @@ def report(log: TraceLog, group: str = "shape") -> str:
     lines.append(f"weight cell writes   : {_fmt(tot.weight_cell_writes)}")
     lines.append(f"column-sum readouts  : {_fmt(tot.column_sums_read)}  "
                  f"(= ADC conversions if 1 conversion per column sum)")
+    lines.append(f"ADC conversions       : {_fmt(tot.adc_conversions)}")
+    lines.append(f"ADC saturations       : {_fmt(tot.adc_saturations)}")
     lines.append(f"MACs issued / useful : {_fmt(tot.macs_issued)} / "
                  f"{_fmt(tot.macs_useful)}   ({tot.utilization:.1%})")
     lines.append(f"peak psum words live : {tot.psum_words_live}")

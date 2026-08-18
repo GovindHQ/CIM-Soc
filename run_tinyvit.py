@@ -306,13 +306,27 @@ def main() -> None:
     p.add_argument("--weight-bits", type=int, default=4)
     p.add_argument("--token-block", type=int, default=None)
     p.add_argument("--cim-out-proj", action="store_true")
+    # ADC options
+    p.add_argument("--adc", action="store_true",
+                   help="Enable ADC quantization on CIM array outputs")
+    p.add_argument("--adc-bits", type=int, default=10,
+                   help="ADC resolution in bits")
     a = p.parse_args()
 
     cfg = CIMConfig(rows=32, cols=32, act_bits=a.act_bits,
-                    weight_bits=a.weight_bits, token_block=a.token_block)
-    print(f"CIM fabric: {cfg.rows}x{cfg.cols}, {cfg.weight_bits}b weights, "
-          f"{cfg.act_bits}b activations, {cfg.planes} plane, "
-          f"{cfg.n_arrays} array, T={cfg.token_block or 'all tokens'}")
+                    weight_bits=a.weight_bits, token_block=a.token_block,     
+                    adc_enabled=a.adc,  # ADC configuration
+                    adc_bits=a.adc_bits,)
+    print(
+    f"CIM fabric: {cfg.rows}x{cfg.cols}, "
+    f"{cfg.weight_bits}b weights, "
+    f"{cfg.act_bits}b activations, "
+    f"{cfg.planes} plane, "
+    f"{cfg.n_arrays} array, "
+    f"T={cfg.token_block or 'all tokens'}, "
+    f"ADC={'ON' if cfg.adc_enabled else 'OFF'}"
+    f"{f' ({cfg.adc_bits}b)' if cfg.adc_enabled else ''}"
+    )
 
     if a.ablate:
         run_ablation(cfg, a.images)

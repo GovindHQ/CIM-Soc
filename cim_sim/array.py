@@ -121,7 +121,7 @@ class CIMConfig:
     # accumulation. Disabled by default so existing exact-integer behavior is
     # unchanged unless explicitly opted in.
     adc_enabled: bool = False
-    adc_bits: int = 8
+    adc_bits: int = 10
     adc_vref: float = 0.6   # volts, unipolar full-scale reference
 
     def __post_init__(self):
@@ -192,7 +192,7 @@ class CIMStats:
 
 def _adc_convert(y: np.ndarray, bits: int, full_scale: int
                  ) -> tuple[np.ndarray, int]:
-    """Functional 8-bit (or `bits`-bit) unipolar ADC.
+    """Functional 10-bit (or `bits`-bit) unipolar ADC.
 
     Maps the signed column sum `y` onto a unipolar [0, Vref] input using
     offset-binary encoding around a fixed, data-independent `full_scale` (see
