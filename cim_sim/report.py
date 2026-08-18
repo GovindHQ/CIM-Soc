@@ -72,6 +72,25 @@ def report(log: TraceLog, group: str = "shape") -> str:
         )
 
     tot = log.total()
+    total_parallel_cycles = sum(
+        r.parallel_array_cycles
+        for r in log.records
+    )
+
+    total_active_arrays = sum(
+        r.active_array_invocations
+        for r in log.records
+    )
+
+    total_array_slots = sum(
+        r.array_slots
+        for r in log.records
+    )
+
+    parallel_util = (
+        total_active_arrays / total_array_slots
+        if total_array_slots else 0.0
+    )
     lines.append("-" * len(hdr))
     lines.append(
         f"{'TOTAL':<20}{'':>6}{'':>6}{'':>6}{len(log.records):>7}{'':>7}"
@@ -84,6 +103,17 @@ def report(log: TraceLog, group: str = "shape") -> str:
                  f"(= ADC conversions if 1 conversion per column sum)")
     lines.append(f"ADC conversions       : {_fmt(tot.adc_conversions)}")
     lines.append(f"ADC saturations       : {_fmt(tot.adc_saturations)}")
+    if log.records:
+        num_arrays = max(r.num_arrays for r in log.records)
+
+        lines.append("")
+        lines.append("parallel-array metrics")
+        lines.append(f"physical CIM arrays   : {num_arrays}")
+        lines.append(f"parallel array cycles : {_fmt(total_parallel_cycles)}")
+        lines.append(
+            f"array parallel util    : {parallel_util:.1%} "
+            f"({total_active_arrays}/{total_array_slots} active slots)"
+        )
     lines.append(f"MACs issued / useful : {_fmt(tot.macs_issued)} / "
                  f"{_fmt(tot.macs_useful)}   ({tot.utilization:.1%})")
     lines.append(f"peak psum words live : {tot.psum_words_live}")

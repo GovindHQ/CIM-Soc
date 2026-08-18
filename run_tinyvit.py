@@ -130,9 +130,9 @@ def run_stage3_only(cfg: CIMConfig) -> None:
     with torch.no_grad():
         ref = attn(x)
 
-    array = CIMArray(cfg)
+    arrays = [CIMArray(cfg) for _ in range(cfg.n_arrays)]
     log = TraceLog()
-    cim = CIMAttention(attn, array, log=log, name="stage3")
+    cim = CIMAttention(attn, arrays=arrays, log=log, name="stage3")
     cim.eval()
     with torch.no_grad():
         out = cim(x)
@@ -161,9 +161,14 @@ def run_full(cfg: CIMConfig, n_images: int, cim_out_proj: bool) -> None:
     with torch.no_grad():
         ref_logits = model(x) #reference normal floating point output in ref_logits
 
-    array = CIMArray(cfg)
+    arrays = [CIMArray(cfg) for _ in range(cfg.n_arrays)]
     log = TraceLog()
-    replaced = convert_attention(model, array, log=log, cim_out_proj=cim_out_proj) #replace attention with cimattention
+    replaced = convert_attention(
+        model,
+        arrays=arrays,
+        log=log,
+        cim_out_proj=cim_out_proj
+    ) #replace attention with cimattention
     print(f"replaced {len(replaced)} attention modules:")
     for r in replaced:
         print(f"    {r}")
@@ -311,12 +316,15 @@ def main() -> None:
                    help="Enable ADC quantization on CIM array outputs")
     p.add_argument("--adc-bits", type=int, default=10,
                    help="ADC resolution in bits")
+    p.add_argument("--num-arrays",type=int,default=1,
+                   help="Number of parallel CIM arrays")
     a = p.parse_args()
 
     cfg = CIMConfig(rows=32, cols=32, act_bits=a.act_bits,
                     weight_bits=a.weight_bits, token_block=a.token_block,     
                     adc_enabled=a.adc,  # ADC configuration
-                    adc_bits=a.adc_bits,)
+                    adc_bits=a.adc_bits,
+                    n_arrays=a.num_arrays,)
     print(
     f"CIM fabric: {cfg.rows}x{cfg.cols}, "
     f"{cfg.weight_bits}b weights, "
