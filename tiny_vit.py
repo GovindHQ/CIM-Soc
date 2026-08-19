@@ -13,16 +13,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.utils.checkpoint as checkpoint
-import timm
-from timm.models.layers import DropPath as TimmDropPath,\
+import _shim.timm
+from _shim.timm.models.layers import DropPath as TimmDropPath,\
     to_2tuple, trunc_normal_
-from timm.models.registry import register_model
+from _shim.timm.models.registry import register_model
 try:
     # timm.__version__ >= "0.6"
-    from timm.models._builder import build_model_with_cfg
+    from _shim.timm.models._builder import build_model_with_cfg # pyright: ignore[reportMissingImports]
 except (ImportError, ModuleNotFoundError):
     # timm.__version__ < "0.6"
-    from timm.models.helpers import build_model_with_cfg
+    from _shim.timm.models.helpers import build_model_with_cfg # pyright: ignore[reportMissingImports]
 
 
 class Conv2d_BN(torch.nn.Sequential):
@@ -623,7 +623,7 @@ def _create_tiny_vit(variant, pretrained=False, **kwargs):
             not k.endswith('attention_bias_idxs')}
         return state_dict
 
-    if timm.__version__ >= "0.6":
+    if _shim.timm.__version__ >= "0.6":
         return build_model_with_cfg(
             TinyViT, variant, pretrained,
             pretrained_cfg=cfg,

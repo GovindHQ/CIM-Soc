@@ -130,9 +130,9 @@ def run_stage3_only(cfg: CIMConfig) -> None:
     with torch.no_grad():
         ref = attn(x)
 
-    array = CIMArray(cfg)
+    arrays = [CIMArray(cfg) for _ in range(cfg.n_arrays)]
     log = TraceLog()
-    cim = CIMAttention(attn, array, log=log, name="stage3")
+    cim = CIMAttention(attn, arrays=arrays, log=log, name="stage3")
     cim.eval()
     with torch.no_grad():
         out = cim(x)
@@ -161,9 +161,14 @@ def run_full(cfg: CIMConfig, n_images: int, cim_out_proj: bool) -> None:
     with torch.no_grad():
         ref_logits = model(x) #reference normal floating point output in ref_logits
 
-    array = CIMArray(cfg)
+    arrays = [CIMArray(cfg) for _ in range(cfg.n_arrays)]
     log = TraceLog()
-    replaced = convert_attention(model, array, log=log, cim_out_proj=cim_out_proj) #replace attention with cimattention
+    replaced = convert_attention(
+        model,
+        arrays=arrays,
+        log=log,
+        cim_out_proj=cim_out_proj
+    ) #replace attention with cimattention
     print(f"replaced {len(replaced)} attention modules:")
     for r in replaced:
         print(f"    {r}")
@@ -306,13 +311,30 @@ def main() -> None:
     p.add_argument("--weight-bits", type=int, default=4)
     p.add_argument("--token-block", type=int, default=None)
     p.add_argument("--cim-out-proj", action="store_true")
+    # ADC options
+    p.add_argument("--adc", action="store_true",
+                   help="Enable ADC quantization on CIM array outputs")
+    p.add_argument("--adc-bits", type=int, default=10,
+                   help="ADC resolution in bits")
+    p.add_argument("--num-arrays",type=int,default=1,
+                   help="Number of parallel CIM arrays")
     a = p.parse_args()
 
     cfg = CIMConfig(rows=32, cols=32, act_bits=a.act_bits,
-                    weight_bits=a.weight_bits, token_block=a.token_block)
-    print(f"CIM fabric: {cfg.rows}x{cfg.cols}, {cfg.weight_bits}b weights, "
-          f"{cfg.act_bits}b activations, {cfg.planes} plane, "
-          f"{cfg.n_arrays} array, T={cfg.token_block or 'all tokens'}")
+                    weight_bits=a.weight_bits, token_block=a.token_block,     
+                    adc_enabled=a.adc,  # ADC configuration
+                    adc_bits=a.adc_bits,
+                    n_arrays=a.num_arrays,)
+    print(
+    f"CIM fabric: {cfg.rows}x{cfg.cols}, "
+    f"{cfg.weight_bits}b weights, "
+    f"{cfg.act_bits}b activations, "
+    f"{cfg.planes} plane, "
+    f"{cfg.n_arrays} array, "
+    f"T={cfg.token_block or 'all tokens'}, "
+    f"ADC={'ON' if cfg.adc_enabled else 'OFF'}"
+    f"{f' ({cfg.adc_bits}b)' if cfg.adc_enabled else ''}"
+    )
 
     if a.ablate:
         run_ablation(cfg, a.images)
