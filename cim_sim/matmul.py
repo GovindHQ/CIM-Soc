@@ -153,6 +153,24 @@ class TraceLog:
             agg.merge(r.stats)
         return agg
 
+    def total_parallel_cycles(self) -> int:
+        """Wall-clock array-timestep count across every matmul in this log.
+
+        For any record with num_arrays=1 this equals that record's own
+        array_ops (see MatmulTrace docstring / TEST 1 in test_multi_array.py),
+        so this sum is directly comparable to CIMStats.array_ops from a
+        single-array run of the same workload — it is what "cycles" already
+        meant before multi-array existed, just correctly counted when P > 1.
+        """
+        return sum(r.parallel_array_cycles for r in self.records)
+
+    def parallel_utilization(self) -> float:
+        """Weighted array_parallel_utilization across every matmul in this log
+        (weighted by array_slots, not a plain average of per-call fractions)."""
+        slots = sum(r.array_slots for r in self.records)
+        active = sum(r.active_array_invocations for r in self.records)
+        return active / slots if slots else 0.0
+
     def by_tag(self) -> dict[str, CIMStats]:
         out: dict[str, CIMStats] = {}
         for r in self.records:

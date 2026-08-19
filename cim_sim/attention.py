@@ -41,7 +41,9 @@ class CIMAttention(nn.Module):
     pretrained weights carry over unchanged.
     """
 
-    def __init__(self, ref: nn.Module, array: CIMArray, log: TraceLog | None = None,
+    def __init__(self, ref: nn.Module, array: CIMArray | None = None,
+                 arrays: list[CIMArray] | None = None,
+                 log: TraceLog | None = None,
                  cim_out_proj: bool = False, name: str = "attn"):
         super().__init__()
         # ---- geometry copied from the reference module ---------------------
@@ -62,7 +64,15 @@ class CIMAttention(nn.Module):
                              persistent=False)
 
         # ---- simulator handles ---------------------------------------------
-        self.array = array
+        # Exactly one of `array` / `arrays` is expected, mirroring cim_matmul's
+        # own array=/arrays= contract. A single array is normalized to a
+        # length-1 pool so the forward path below has one code path, not two.
+        if arrays is not None:
+            self.arrays = list(arrays)
+        elif array is not None:
+            self.arrays = [array]
+        else:
+            raise ValueError("CIMAttention requires either `array` or `arrays`")
         self.log = log
         self.cim_out_proj = cim_out_proj
         self.name = name
@@ -87,7 +97,7 @@ class CIMAttention(nn.Module):
             # distinguish them, it just streams row vectors.
             xf = _np(x.reshape(B * N, C))
             Wq = _np(self.qkv.weight).T                      # [C, h]
-            qkv_np = cim_matmul(xf, Wq, self.array,
+            qkv_np = cim_matmul(xf, Wq, arrays=self.arrays,
                                 tag=f"{self.name}.qkv", log=self.log)
             qkv = torch.from_numpy(qkv_np).to(x.dtype).to(x.device)
             if self.qkv.bias is not None:
@@ -105,7 +115,7 @@ class CIMAttention(nn.Module):
         # ---- 2. QK^T -------------------------------------------------- #
         if self.cim_enabled and "qk" in self.cim_ops:
             kt = k.transpose(-2, -1)                          # (B, heads, key_dim, N)
-            scores_np = cim_matmul_batched(_np(q), _np(kt), self.array,
+            scores_np = cim_matmul_batched(_np(q), _np(kt), arrays=self.arrays,
                                            tag=f"{self.name}.qk_t", log=self.log)
             scores = torch.from_numpy(scores_np).to(x.dtype).to(x.device)
         else:
@@ -118,7 +128,7 @@ class CIMAttention(nn.Module):
         if self.cim_enabled and "av" in self.cim_ops:
             # attn is a probability matrix in [0, 1]: unsigned quantization, so
             # the sign bit is not wasted on data that has no negative side.
-            out_np = cim_matmul_batched(_np(attn), _np(v), self.array,
+            out_np = cim_matmul_batched(_np(attn), _np(v), arrays=self.arrays,
                                         tag=f"{self.name}.av", log=self.log,
                                         act_signed=False)
             out = torch.from_numpy(out_np).to(x.dtype).to(x.device)
@@ -130,7 +140,7 @@ class CIMAttention(nn.Module):
         # ---- 4. output projection (off-array by default) --------------- #
         if self.cim_enabled and self.cim_out_proj:
             Wp = _np(self.proj.weight).T
-            o = cim_matmul(_np(out.reshape(B * N, self.dh)), Wp, self.array,
+            o = cim_matmul(_np(out.reshape(B * N, self.dh)), Wp, arrays=self.arrays,
                            tag=f"{self.name}.proj", log=self.log)
             out = torch.from_numpy(o).to(x.dtype).to(x.device).reshape(B, N, -1)
             if self.proj.bias is not None:
@@ -144,10 +154,19 @@ class CIMAttention(nn.Module):
 # --------------------------------------------------------------------------- #
 
 
-def convert_attention(model: nn.Module, array: CIMArray, log: TraceLog | None = None,
+def convert_attention(model: nn.Module, array: CIMArray | None = None,
+                      arrays: list[CIMArray] | None = None,
+                      log: TraceLog | None = None,
                       cim_out_proj: bool = False,
                       class_name: str = "Attention") -> list[str]:
     """Recursively replace every `Attention` submodule with `CIMAttention`.
+
+    `array` (single) or `arrays` (a pool of P) — exactly one, same contract as
+    CIMAttention/cim_matmul. The SAME pool is shared across every replaced
+    layer: a real accelerator has a fixed set of physical macros that every
+    layer's matmuls are time-multiplexed onto sequentially, not one macro set
+    per layer, so stats accumulate on the array objects across the whole
+    forward pass — matching how the single-array case already behaved.
 
     Matching is by class name so this works with any TinyViT copy without
     importing it. Returns the list of replaced module paths.
@@ -159,7 +178,7 @@ def convert_attention(model: nn.Module, array: CIMArray, log: TraceLog | None = 
             path = f"{prefix}.{name}" if prefix else name
             if type(child).__name__ == class_name and hasattr(child, "key_dim"):
                 setattr(parent, name,
-                        CIMAttention(child, array, log=log,
+                        CIMAttention(child, array=array, arrays=arrays, log=log,
                                      cim_out_proj=cim_out_proj, name=path))
                 replaced.append(path)
             else:
