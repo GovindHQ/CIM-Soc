@@ -282,8 +282,10 @@ def cim_matmul(
                     arr.load_weight_tile(wq_p[r0:r0 + R, c0:c0 + C],
                                          tile_id=(id(W), db, ob))
                     y = arr.mvm(xq_p[t0:t1, r0:r0 + R],
-                               useful_rows=useful_rows,
-                               useful_cols=useful_cols)
+                                useful_rows=useful_rows,
+                                useful_cols=useful_cols,
+                                probe_tag=tag,
+                                act_signed=act_signed)
                     acc[t0:t1, c0:c0 + C] += y
 
                 # All arrays active in this group ran depth block `db` at the
@@ -362,10 +364,22 @@ def cim_matmul_batched(
 
 
 def _snapshot(s: CIMStats) -> CIMStats:
+    """Cheap copy of the counters.
+
+    This is valid only because every CIMStats field is a scalar. If a field
+    that is a list, array or None-able value is ever added, this breaks and so
+    does _delta below — which is exactly why distribution data lives in
+    adc_probe.py instead of here.
+    """
     return CIMStats(**vars(s))
 
 
 def _delta(before: CIMStats, after: CIMStats) -> CIMStats:
+    """Statistics generated since `before`.
+
+    Counters are differenced; peak/high-water fields are carried through as
+    their post value, since a max is not meaningfully differenced.
+    """
     d = CIMStats()
     for k in vars(before):
         if k in ("psum_words_live", "max_abs_colsum", "max_abs_accum"):

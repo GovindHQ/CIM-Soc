@@ -76,6 +76,8 @@ def quantize(
     Returns:
         (q, scale) where q is an int32 array of the same shape as x, and scale
         broadcasts against x. Dequantization is simply q * scale.
+
+    IMP!: So, We're currently using symmetric max-based PTQ, with per-token activation scales and per-output-channel weight scales!!
     """
     qmin, qmax = int_range(bits, signed)
 

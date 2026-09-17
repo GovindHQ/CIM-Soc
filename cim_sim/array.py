@@ -70,14 +70,24 @@ accumulator contract (`acc += y`) is unchanged; the ADC's effect is purely a
 resolution loss (256 levels across the full symmetric range) plus saturation
 clipping at +/- full_scale.
 
-KNOWN LIMITATION: full_scale assumes both operands use the full signed
-two's-complement range. The one place that isn't true is post-softmax AV
-activations, which are quantized unsigned (0..2^act_bits-1, see
-quant.act_signed=False) and so never reach the negative extreme. full_scale is
-therefore conservative (slightly coarser ADC step size than strictly
-necessary) for that case — never wrong, just not maximally tight. Fixing this
-exactly would require threading operand signedness into CIMArray, which is out
-of scope for this change.
+OPERAND SIGNEDNESS AND THE BOUND
+--------------------------------
+The bound depends on the signedness of the activation operand, and getting this
+wrong is not conservative in the safe direction:
+
+    signed activations   (qkv, QK^T):  |x| <= 2^(ab-1)
+    unsigned activations (AV)       :  |x| <= 2^ab - 1        <-- ~2x larger
+
+Post-softmax attention probabilities are quantized unsigned (0..2^ab-1, see
+quant.act_signed=False), so on the AV path a bound built from 2^(ab-1) is an
+UNDER-estimate by almost exactly 2x. A flat attention row quantizes to values
+near the top of the unsigned range on every one of the 32 rows, all with the
+same sign, which is precisely the case that produces the largest column sums in
+the whole model. Sizing the converter from the signed bound therefore clips AV
+at nominal full scale while reporting no design error.
+
+`full_scale_for(act_signed)` computes the correct bound for each case, and
+`mvm()` takes `act_signed` so the ADC and the diagnostics both use it.
 
 BATCHING NOTE
 -------------
@@ -89,10 +99,11 @@ counters treat it as T separate array operations, which is what it is.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
+from . import adc_probe
 from .quant import int_range
 
 
@@ -123,6 +134,17 @@ class CIMConfig:
     adc_enabled: bool = False
     adc_bits: int = 10
     adc_vref: float = 0.6   # volts, unipolar full-scale reference
+
+    # ADC full scale, in column-sum units. None => the theoretical worst-case
+    # bound rows * 2^(wb-1) * 2^(ab-1), which is what the array CAN produce.
+    #
+    # Setting this to a smaller number models a real design choice: sizing the
+    # converter's reference (or the analog gain ahead of it) for the signal the
+    # workload actually produces, and accepting that a small tail clips. It
+    # stays a CONFIGURATION CONSTANT chosen once at design time — it is never
+    # computed from the input being processed, which would make the ADC
+    # data-dependent and unbuildable.
+    adc_full_scale_override: int | dict[str, int] | None = None
 
     def __post_init__(self):
         if self.planes != 1:
@@ -155,6 +177,12 @@ class CIMStats:
     max_abs_accum: int = 0          # largest value after depth accumulation
     adc_conversions: int = 0        # ADC conversions performed (0 if disabled)
     adc_saturations: int = 0        # of those, how many clipped to +/- full_scale
+
+    # NOTE: every field above is a scalar that can be summed or maxed. That is
+    # a hard requirement, not a coincidence: matmul._snapshot/_delta subtract
+    # this struct from itself on every cim_matmul() call. Distribution data
+    # (percentiles, histograms, raw samples) must NOT live here — see
+    # adc_probe.py, which records it on a side channel that nothing deltas.
 
     def merge(self, other: "CIMStats") -> None:
         self.weight_tile_writes += other.weight_tile_writes
@@ -245,12 +273,55 @@ class CIMArray:
 
         self.w_min, self.w_max = int_range(self.cfg.weight_bits, signed=True)
 
-        # Data-independent ADC full-scale: the worst-case column sum this
-        # geometry and these operand bit widths can ever produce. See the
-        # "PHYSICAL ASSUMPTION" note in the module docstring.
-        self.adc_full_scale = (self.cfg.rows
-                               * 2 ** (self.cfg.weight_bits - 1)
-                               * 2 ** (self.cfg.act_bits - 1))
+        # Data-independent ADC full-scale bounds: the worst-case column sum
+        # this geometry and these operand bit widths can ever produce, for each
+        # activation signedness. See "OPERAND SIGNEDNESS" in the docstring.
+        self.adc_full_scale_theoretical = self.full_scale_for(True)
+        self.adc_full_scale_theoretical_unsigned = self.full_scale_for(False)
+
+        # Widest bound over both paths. This is what the diagnostic histogram
+        # must span, so that AV values which overflow the signed bound are
+        # recorded rather than lost.
+        self.adc_full_scale_theoretical_max = max(
+            self.adc_full_scale_theoretical,
+            self.adc_full_scale_theoretical_unsigned,
+        )
+
+        # Back-compat convenience: the full scale used for a signed-activation
+        # op with no override. Prefer adc_full_scale_for() at the call site.
+        self.adc_full_scale = self.adc_full_scale_for(True, None)
+
+    def full_scale_for(self, act_signed: bool) -> int:
+        """Worst-case |column sum| for this geometry and operand signedness."""
+        act_max = (2 ** (self.cfg.act_bits - 1) if act_signed
+                   else 2 ** self.cfg.act_bits - 1)
+        return self.cfg.rows * 2 ** (self.cfg.weight_bits - 1) * act_max
+
+    def adc_full_scale_for(self, act_signed: bool, tag: str | None) -> int:
+        """The full scale the converter is actually built for, for this op.
+
+        Defaults to the theoretical bound. An override trades a clipped tail
+        for a finer LSB. The override may be a single int (one reference for
+        the whole fabric) or a dict keyed by the trailing component of the
+        trace tag, e.g. {"qkv": 300, "qk_t": 512, "av": 900} — which models
+        giving each engine its own ADC reference, and costs nothing in hardware
+        because the engines are already physically separate.
+
+        Either form is a CONFIGURATION CONSTANT chosen once at design time. It
+        is never computed from the input being processed.
+        """
+        ov = self.cfg.adc_full_scale_override
+        if ov is None:
+            return self.full_scale_for(act_signed)
+        if isinstance(ov, dict):
+            key = (tag or "").rsplit(".", 1)[-1]
+            if key not in ov:
+                return self.full_scale_for(act_signed)
+            fs = int(ov[key])
+        else:
+            fs = int(ov)
+        assert fs > 0, "ADC full scale override must be positive"
+        return fs
 
     # ---- weight path ---------------------------------------------------- #
 
@@ -274,10 +345,11 @@ class CIMArray:
         self.stats.weight_tile_writes += 1
         self.stats.weight_cell_writes += self.cfg.rows * self.cfg.cols
 
-    # ---- compute path --------------------------------------------------- #
-
+    # ---- compute path ---------------------------------------------------
     def mvm(self, x: np.ndarray, useful_rows: int | None = None,
-            useful_cols: int | None = None) -> np.ndarray:
+            useful_cols: int | None = None,
+            probe_tag: str | None = None,
+            act_signed: bool = True) -> np.ndarray:
         """Broadcast input vectors along the rows, read out the column sums.
 
         Args:
@@ -313,10 +385,24 @@ class CIMArray:
             # since this is the number that sizes the ADC in the first place.
             s.max_abs_colsum = max(s.max_abs_colsum, int(np.abs(y).max()))
 
+        # Side-channel distribution recording. Deliberately OUTSIDE the
+        # adc_enabled branch: the pre-ADC signal is exactly what you want to
+        # measure when the ADC is off, because that is the undistorted
+        # distribution that should size the converter. Only the useful columns
+        # are recorded — padded columns hold zero weights and would contribute
+        # a pile of exact zeros that is not signal.
+        if adc_probe.get() is not None and y.size:
+            adc_probe.record(probe_tag or "untagged", y[:, :uc],
+                             bound=self.full_scale_for(act_signed))
+
         if self.cfg.adc_enabled:
             # One ADC per column, applied to this single depth block's output,
             # before matmul.py accumulates it across depth blocks.
-            y, n_sat = _adc_convert(y, self.cfg.adc_bits, self.adc_full_scale)
+            y, n_sat = _adc_convert(
+                y,
+                bits=self.cfg.adc_bits,
+                full_scale=self.adc_full_scale_for(act_signed, probe_tag),
+            )
             s.adc_conversions += T * self.cfg.cols
             s.adc_saturations += n_sat
 

@@ -30,8 +30,9 @@ sys.path.insert(0, str(HERE))
 
 import numpy as np
 import torch
-
+from PIL import Image
 from cim_sim import CIMArray, CIMConfig, TraceLog, cosine_sim, report, tile_map
+from cim_sim import adc_probe
 from cim_sim.attention import (CIMAttention, convert_attention,
                                set_cim_enabled, set_cim_ops)
 from tiny_vit import TinyViT
@@ -107,6 +108,66 @@ def synthetic_images(n: int = 2, size: int = 224, seed: int = 0) -> torch.Tensor
     std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
     return (x - mean) / std
 
+def real_images(image_dir: str = "images",
+                n: int = 2,
+                size: int = 224) -> tuple[torch.Tensor, list[str]]:
+    """
+    Load real images from image_dir and preprocess them for TinyViT.
+
+    Returns:
+        x: Tensor of shape (B, 3, 224, 224)
+        names: List of corresponding image filenames
+    """
+
+    image_path = HERE / image_dir
+
+    extensions = {".jpg", ".jpeg", ".png"}
+
+    files = sorted(
+        f for f in image_path.iterdir()
+        if f.suffix.lower() in extensions
+    )
+
+    if not files:
+        raise FileNotFoundError(
+            f"No images found in: {image_path}\n"
+            f"Add .jpg, .jpeg, or .png images there."
+        )
+
+    # Use at most n images
+    files = files[:n]
+
+    imgs = []
+    names = []
+
+    for file in files:
+
+        img = Image.open(file).convert("RGB")
+
+        # Resize to 224 x 224
+        img = img.resize((size, size))
+
+        # PIL image -> NumPy array -> Tensor
+        arr = np.array(img, dtype=np.float32) / 255.0
+
+        # (H, W, C) -> (C, H, W)
+        tensor = torch.from_numpy(arr).permute(2, 0, 1)
+
+        imgs.append(tensor)
+        names.append(file.name)
+
+    # Stack images:
+    # [(3,224,224), (3,224,224), ...]
+    # -> (B,3,224,224)
+    x = torch.stack(imgs)
+
+    # ImageNet normalization
+    mean = torch.tensor([0.485, 0.456, 0.406]).view(1, 3, 1, 1)
+    std = torch.tensor([0.229, 0.224, 0.225]).view(1, 3, 1, 1)
+
+    x = (x - mean) / std
+
+    return x, names
 
 # --------------------------------------------------------------------------- #
 # modes
@@ -154,14 +215,44 @@ def run_stage3_only(cfg: CIMConfig) -> None:
           f"   cosine: {cosine_sim(out.detach().numpy(), ref.detach().numpy()):.4f}")
 
 
-def run_full(cfg: CIMConfig, n_images: int, cim_out_proj: bool) -> None:
+def run_full(cfg: CIMConfig,
+             n_images: int,
+             cim_out_proj: bool,
+             adc_stats: bool = False,
+             image_dir: str | None = None,
+             probe_out: str | None = None,
+             probe_granularity: str = "op") -> None:
+
     model = build_model()
-    x = synthetic_images(n_images)
+
+    if image_dir is not None:
+        x, image_names = real_images(image_dir, n_images)
+        print(f"\nLoaded {len(image_names)} real image(s):")
+
+        for i, name in enumerate(image_names):
+            print(f"  image {i}: {name}")
+
+    else:
+        x = synthetic_images(n_images)
+        image_names = [
+            f"synthetic_{i}"
+            for i in range(n_images)
+        ]
 
     with torch.no_grad():
         ref_logits = model(x) #reference normal floating point output in ref_logits
 
     arrays = [CIMArray(cfg) for _ in range(cfg.n_arrays)]
+
+    # The probe must be armed BEFORE the CIM forward pass, and it records the
+    # theoretical bound so that values overflowing a reduced ADC range are
+    # still captured rather than silently lost.
+    if adc_stats:
+        adc_probe.enable(arrays[0].adc_full_scale_theoretical_max,
+                         granularity=probe_granularity)
+    else:
+        adc_probe.disable()
+
     log = TraceLog()
     replaced = convert_attention(
         model,
@@ -179,15 +270,37 @@ def run_full(cfg: CIMConfig, n_images: int, cim_out_proj: bool) -> None:
     print()
     print(report(log))
 
+    # ================================================================
+    # PRE-ADC DISTRIBUTION DIAGNOSTICS
+    # ================================================================
+    if adc_stats:
+        probe = adc_probe.get()
+        print()
+        print(adc_probe.distribution_report(
+            probe,
+            adc_full_scale=arrays[0].adc_full_scale,
+            adc_bits=cfg.adc_bits if cfg.adc_enabled else None,
+        ))
+        if probe_out:
+            probe.save(probe_out, meta={
+                "act_bits": cfg.act_bits,
+                "weight_bits": cfg.weight_bits,
+                "rows": cfg.rows,
+                "adc_enabled": int(cfg.adc_enabled),
+                "adc_bits": cfg.adc_bits,
+                "adc_full_scale": arrays[0].adc_full_scale,
+            })
+            print(f"  histograms written to {probe_out}")
+
     print()
     print("=" * 78)
-    print("ACCURACY  (synthetic inputs — see the caveat in the docstring)")
+    print("FLOAT vs CIM OUTPUT COMPARISON")
     print("=" * 78)
     ref_top = ref_logits.argmax(-1) #to check with has the highest score
     cim_top = cim_logits.argmax(-1)
     for i in range(x.shape[0]):
         r, c = ref_logits[i], cim_logits[i]
-        print(f"  image {i}: top-1 float={ref_top[i].item():>4}  "
+        print(f"{image_names[i]}: top-1 float={ref_top[i].item():>4}  "
               f"cim={cim_top[i].item():>4}  "
               f"{'MATCH' if ref_top[i]==cim_top[i] else 'DIFFER'}   "
               f"logit cos={cosine_sim(c.numpy(), r.numpy()):.4f}   "
@@ -311,19 +424,52 @@ def main() -> None:
     p.add_argument("--weight-bits", type=int, default=4)
     p.add_argument("--token-block", type=int, default=None)
     p.add_argument("--cim-out-proj", action="store_true")
+    p.add_argument("--image-dir",type=str,default=None,
+                   help="Directory containing real .jpg/.jpeg/.png images")
     # ADC options
     p.add_argument("--adc", action="store_true",
                    help="Enable ADC quantization on CIM array outputs")
     p.add_argument("--adc-bits", type=int, default=10,
                    help="ADC resolution in bits")
+    p.add_argument("--adc-stats", action="store_true",
+                   help="Record and report the pre-ADC column-sum distribution. "
+                        "Works with the ADC on OR off; off is the one you want "
+                        "for sizing the converter.")
+    p.add_argument("--adc-fs", type=str, default=None,
+                   help="ADC full scale in column-sum units. Either one number "
+                        "for the whole fabric (e.g. --adc-fs 900) or a "
+                        "per-operation list giving each engine its own ADC "
+                        "reference (e.g. --adc-fs qkv=300,qk_t=512,av=900). "
+                        "Default is the theoretical worst case for each op.")
+    p.add_argument("--probe-out", type=str, default=None,
+                   help="Write pre-ADC histograms to this .npz for offline "
+                        "analysis with adc_analysis.py")
+    p.add_argument("--probe-granularity", type=str, default="op",
+                   choices=("op", "full"),
+                   help="'op' buckets into qkv/qk_t/av; 'full' keeps one "
+                        "histogram per attention module")
     p.add_argument("--num-arrays",type=int,default=1,
                    help="Number of parallel CIM arrays")
     a = p.parse_args()
+
+    # --adc-fs: single int, or a per-operation map. A per-op map models each
+    # engine owning its ADC reference, which is free given the engines are
+    # already physically separate.
+    adc_fs = None
+    if a.adc_fs:
+        if "=" in a.adc_fs:
+            adc_fs = {}
+            for part in a.adc_fs.split(","):
+                k, v = part.split("=", 1)
+                adc_fs[k.strip()] = int(v)
+        else:
+            adc_fs = int(a.adc_fs)
 
     cfg = CIMConfig(rows=32, cols=32, act_bits=a.act_bits,
                     weight_bits=a.weight_bits, token_block=a.token_block,     
                     adc_enabled=a.adc,  # ADC configuration
                     adc_bits=a.adc_bits,
+                    adc_full_scale_override=adc_fs,
                     n_arrays=a.num_arrays,)
     print(
     f"CIM fabric: {cfg.rows}x{cfg.cols}, "
@@ -334,6 +480,7 @@ def main() -> None:
     f"T={cfg.token_block or 'all tokens'}, "
     f"ADC={'ON' if cfg.adc_enabled else 'OFF'}"
     f"{f' ({cfg.adc_bits}b)' if cfg.adc_enabled else ''}"
+    f"{f' FS={cfg.adc_full_scale_override}' if cfg.adc_full_scale_override else ''}"
     )
 
     if a.ablate:
@@ -345,7 +492,11 @@ def main() -> None:
     elif a.stage3_only:
         run_stage3_only(cfg)
     else:
-        run_full(cfg, a.images, a.cim_out_proj)
+        run_full(cfg, a.images, a.cim_out_proj,
+                 adc_stats=a.adc_stats,
+                 image_dir=a.image_dir,
+                 probe_out=a.probe_out,
+                 probe_granularity=a.probe_granularity)
 
 
 if __name__ == "__main__":
