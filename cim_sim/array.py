@@ -24,9 +24,24 @@ WHAT IS AND IS NOT MODELLED
             broadcast counts, column-sum readout counts, row/column
             utilization, and (when cfg.adc_enabled) an 8-bit unipolar ADC on
             every column output, applied once per depth block.
-  Not modelled (this version): DAC non-linearity, analog noise, IR drop, write
-            settle time, multiple parallel arrays, multi-plane residency,
-            bit-slicing to 8b.
+  Not modelled (this version): IR drop, write settle time, multi-plane
+            residency, bit-slicing to 8b. (Multiple parallel arrays are
+            scheduled by matmul.py; this class is always one macro.)
+
+TWO MUTUALLY EXCLUSIVE COMPUTE MODES
+------------------------------------
+  Legacy (cfg.analog is None or not enabled): exact integer MAC, optionally
+            followed by the functional `adc_enabled` ADC below. Returns
+            column-sum units. This is the default and is unchanged.
+  Physical analog (cfg.analog = AnalogConfig(enabled=True)): the
+            cim_sim.analog chain (input DAC -> C2C macro -> pre-ADC gain ->
+            SAR ADC) replaces the MAC AND the legacy ADC. Returns signed ADC
+            CODES; matmul.py rescales once by the chain's LSB_P. In this mode
+            cfg.adc_enabled / adc_bits / adc_vref are ignored — the SAR ADC is
+            configured by AnalogConfig.adc_bits / adc_vref instead — and
+            max_abs_colsum is not recorded (no exact column sum exists).
+            DAC/macro/amplifier/comparator nonidealities are hooks on
+            AnalogConfig, all ideal by default.
 
 With 32 rows of 4b x 4b products the worst case column-sum magnitude is
 32 * 8 * 8 = 2048, so the exact (pre-ADC) sum needs ~12 bits before any
@@ -123,6 +138,13 @@ class CIMConfig:
     adc_enabled: bool = False
     adc_bits: int = 8
     adc_vref: float = 0.6   # volts, unipolar full-scale reference
+
+    # Physical analog datapath (DAC -> C2C macro -> pre-ADC gain -> SAR ADC).
+    # When set, mvm() executes the analog chain instead of the digital
+    # MAC + normalised-voltage abstraction, and returns signed ADC CODES
+    # rather than column-sum units (matmul.py rescales once via LSB_P).
+    # None => legacy behaviour, bit-identical to before.
+    analog: object | None = None
 
     def __post_init__(self):
         if self.planes != 1:
@@ -245,6 +267,16 @@ class CIMArray:
 
         self.w_min, self.w_max = int_range(self.cfg.weight_bits, signed=True)
 
+        # Physical analog chain, if configured. Built once per array so that
+        # K_MAC / LSB_P are derived from architecture exactly once and never
+        # from data (see cim_sim/analog/chain.py).
+        self.chain = None
+        if getattr(self.cfg, "analog", None) is not None and self.cfg.analog.enabled:
+            from .analog import AnalogChain
+            self.chain = AnalogChain(self.cfg.analog, rows=self.cfg.rows,
+                                     weight_bits=self.cfg.weight_bits,
+                                     act_bits=self.cfg.act_bits)
+
         # Data-independent ADC full-scale: the worst-case column sum this
         # geometry and these operand bit widths can ever produce. See the
         # "PHYSICAL ASSUMPTION" note in the module docstring.
@@ -271,6 +303,10 @@ class CIMArray:
 
         self._W = W.astype(np.int32)
         self._W_id = tile_id
+        if self.chain is not None:
+            # split signed weight into (sign, capacitor code) at write time;
+            # the C2C ladder never sees a two's-complement word.
+            self.chain.program(self._W)
         self.stats.weight_tile_writes += 1
         self.stats.weight_cell_writes += self.cfg.rows * self.cfg.cols
 
@@ -298,6 +334,32 @@ class CIMArray:
             f"input vector must have {self.cfg.rows} entries, got {x.shape[1]}"
 
         T = x.shape[0]
+
+        if self.chain is not None:
+            # ---- physical analog datapath ------------------------------- #
+            # X_q -> DAC -> V_IA -> C2C macro -> V_OA -> gain -> SAR ADC.
+            # Returns SIGNED ADC CODES; matmul.py accumulates them as integers
+            # and applies LSB_P once (see analog/digital.py).
+            adc = self.chain.adc
+            clipped_before = adc.n_clipped_hi + adc.n_clipped_lo
+            d = self.chain.execute(x)
+            ur = self.cfg.rows if useful_rows is None else useful_rows
+            uc = self.cfg.cols if useful_cols is None else useful_cols
+            st = self.stats
+            st.array_ops += T
+            st.column_sums_read += T * self.cfg.cols
+            st.macs_issued += T * self.cfg.rows * self.cfg.cols
+            st.macs_useful += T * ur * uc
+            st.adc_conversions += T * self.cfg.cols
+            # Same semantics as the legacy path: count THIS call's clipped
+            # conversions, so the counter is per-array-stats and reset_stats()
+            # really zeroes it. The SARADC's own n_clipped_* counters are the
+            # chain's lifetime diagnostics and are deliberately left alone.
+            st.adc_saturations += (adc.n_clipped_hi + adc.n_clipped_lo
+                                   - clipped_before)
+            return d
+
+        # ---- legacy digital-MAC abstraction (unchanged) ----------------- #
         y = x @ self._W                      # [T, 32] exact integer column sums
 
         ur = self.cfg.rows if useful_rows is None else useful_rows

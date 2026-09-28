@@ -98,7 +98,8 @@ class CIMAttention(nn.Module):
             xf = _np(x.reshape(B * N, C))
             Wq = _np(self.qkv.weight).T                      # [C, h]
             qkv_np = cim_matmul(xf, Wq, arrays=self.arrays,
-                                tag=f"{self.name}.qkv", log=self.log)
+                                tag=f"{self.name}.qkv", log=self.log,
+                                op="qkv")
             qkv = torch.from_numpy(qkv_np).to(x.dtype).to(x.device)
             if self.qkv.bias is not None:
                 qkv = qkv + self.qkv.bias                    # bias added digitally
@@ -116,7 +117,8 @@ class CIMAttention(nn.Module):
         if self.cim_enabled and "qk" in self.cim_ops:
             kt = k.transpose(-2, -1)                          # (B, heads, key_dim, N)
             scores_np = cim_matmul_batched(_np(q), _np(kt), arrays=self.arrays,
-                                           tag=f"{self.name}.qk_t", log=self.log)
+                                           tag=f"{self.name}.qk_t", log=self.log,
+                                           op="qk")
             scores = torch.from_numpy(scores_np).to(x.dtype).to(x.device)
         else:
             scores = q @ k.transpose(-2, -1)
@@ -130,7 +132,7 @@ class CIMAttention(nn.Module):
             # the sign bit is not wasted on data that has no negative side.
             out_np = cim_matmul_batched(_np(attn), _np(v), arrays=self.arrays,
                                         tag=f"{self.name}.av", log=self.log,
-                                        act_signed=False)
+                                        act_signed=False, op="av")
             out = torch.from_numpy(out_np).to(x.dtype).to(x.device)
         else:
             out = attn @ v
@@ -141,7 +143,8 @@ class CIMAttention(nn.Module):
         if self.cim_enabled and self.cim_out_proj:
             Wp = _np(self.proj.weight).T
             o = cim_matmul(_np(out.reshape(B * N, self.dh)), Wp, arrays=self.arrays,
-                           tag=f"{self.name}.proj", log=self.log)
+                           tag=f"{self.name}.proj", log=self.log,
+                           op="proj")
             out = torch.from_numpy(o).to(x.dtype).to(x.device).reshape(B, N, -1)
             if self.proj.bias is not None:
                 out = out + self.proj.bias

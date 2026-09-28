@@ -195,6 +195,7 @@ def cim_matmul(
     act_signed: bool = True,
     quantize_weights: bool = True,
     arrays: list[CIMArray] | None = None,
+    op: str | None = None,
 ) -> np.ndarray:
     """Compute X @ W on the simulated CIM fabric.
 
@@ -209,7 +210,13 @@ def cim_matmul(
            is equivalent to `array=a`.
         tag: label for the trace record, e.g. "qkv_proj", "qk_t", "av".
         act_signed: False for non-negative activations such as post-softmax
-           attention probabilities, where a sign bit would be wasted.
+           attention probabilities, where a sign bit would be wasted. On the
+           analog path this also selects the input DAC's code domain.
+        op: operation label ("qkv", "qk", "av", "proj", or None). Only used by
+           the physical analog path, where it selects the per-operation
+           pre-ADC gain (AnalogConfig.gain_per_op, falling back to
+           gain_default) and the AnalogStats bucket. Ignored on the legacy
+           path.
 
     Returns:
         [N, M] float result.
@@ -230,6 +237,29 @@ def cim_matmul(
         assert (a.cfg.weight_bits, a.cfg.act_bits) == (cfg.weight_bits, cfg.act_bits), \
             "all arrays in `arrays` must share the same operand precision"
     P = len(array_list)
+
+    # Select the per-operation analog gain ONCE for this whole matmul, so every
+    # depth block of every output tile shares one gain and therefore one LSB_P.
+    # This is what makes the integer accumulation below physically meaningful
+    # (spec 8/9). Gain is a configuration parameter; it is never derived here
+    # from the data.
+    _chains = [getattr(a, "chain", None) for a in array_list]
+    _chain = _chains[0]
+    if _chain is not None:
+        assert all(c is not None for c in _chains), \
+            "cannot mix analog-enabled and legacy arrays in one `arrays` pool"
+        for c in _chains:
+            c.set_operation(op, act_signed=act_signed)
+        # One accumulator spans all P arrays, so every array must produce codes
+        # in the same analog scale domain (the check DigitalAccumulator.add
+        # performs per block, done here once per matmul).
+        assert all(c.domain_key == _chain.domain_key for c in _chains), \
+            "all arrays in `arrays` must share one analog scale domain " \
+            "(DAC / macro / gain / ADC configuration)"
+    else:
+        assert all(c is None for c in _chains), \
+            "cannot mix analog-enabled and legacy arrays in one `arrays` pool"
+    _analog_scale = _chain.lsb_p if _chain is not None else 1.0
 
     X = np.asarray(X, dtype=np.float64)
     W = np.asarray(W, dtype=np.float64)
@@ -309,7 +339,11 @@ def cim_matmul(
                 parallel_array_cycles += (t1 - t0)
 
     # -- 5. single end-of-chain rescale ------------------------------------- #
-    out = acc[:, :M].astype(np.float64) * sx * sw
+    # Two scales, deliberately kept separate (spec 17/20):
+    #   _analog_scale = LSB_P, the hardware code->column-sum scale (1.0 when the
+    #                   analog path is off, so legacy behaviour is unchanged);
+    #   sx * sw       = the neural-network quantization scales.
+    out = acc[:, :M].astype(np.float64) * _analog_scale * sx * sw
 
     # -- bookkeeping ---------------------------------------------------------#
     # PSUM is a single shared digital accumulator downstream of all P arrays
@@ -348,6 +382,7 @@ def cim_matmul_batched(
     log: TraceLog | None = None,
     act_signed: bool = True,
     arrays: list[CIMArray] | None = None,
+    op: str | None = None,
 ) -> np.ndarray:
     """Batched X @ W over arbitrary leading dimensions.
 
@@ -370,7 +405,7 @@ def cim_matmul_batched(
     out = np.empty((Xf.shape[0], N, M), dtype=np.float64)
     for b in range(Xf.shape[0]):
         out[b] = cim_matmul(Xf[b], Wf[b], array, tag=tag, log=log,
-                            act_signed=act_signed, arrays=arrays)
+                            act_signed=act_signed, arrays=arrays, op=op)
     return out.reshape(*lead, N, M)
 
 
