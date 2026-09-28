@@ -76,12 +76,20 @@ regardless of how many of the P arrays were active in that group.
 
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass, field
 
 import numpy as np
 
 from .array import CIMArray, CIMConfig, CIMStats
 from .quant import quantize
+
+# Monotonic per-call token for weight-tile identity. Each cim_matmul call takes
+# one fresh value, so a tile id (call, db, ob) can match an array's resident
+# tile only within the SAME call (legitimate reuse across token blocks). The
+# previous key used id(W), which CPython reuses once W is freed; a later call
+# could then match a stale resident tile and silently skip its weight load.
+_MATMUL_CALL_IDS = itertools.count()
 
 
 # --------------------------------------------------------------------------- #
@@ -304,6 +312,7 @@ def cim_matmul(
 
     stats_before = [_snapshot(a.stats) for a in array_list]
     parallel_array_cycles = 0
+    call_id = next(_MATMUL_CALL_IDS)     # tile identity scope: this call only
 
     # -- 4. the loop nest --------------------------------------------------- #
     # Depth block is the outer loop within a group: one activation tile is
@@ -328,7 +337,7 @@ def cim_matmul(
                     arr = array_list[slot]
 
                     arr.load_weight_tile(wq_p[r0:r0 + R, c0:c0 + C],
-                                         tile_id=(id(W), db, ob))
+                                         tile_id=(call_id, db, ob))
                     y = arr.mvm(xq_p[t0:t1, r0:r0 + R],
                                useful_rows=useful_rows,
                                useful_cols=useful_cols)
