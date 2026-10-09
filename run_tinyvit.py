@@ -40,6 +40,11 @@ CKPT = HERE / "tinyvit5m.pth"
 CKPT_URL = ("https://github.com/wkcn/TinyViT-model-zoo/releases/download/"
             "checkpoints/tiny_vit_5m_22kto1k_distill.pth")
 
+# Alternative weights source (e.g. a QAT-trained TinyViT-5M state_dict), set by
+# --weights. None => the pretrained CKPT above. Module-level so that every mode
+# (and every build_model() call inside a sweep) uses the same weights.
+WEIGHTS: Path | None = None
+
 
 def ensure_checkpoint() -> None:
     """Fetch the pretrained TinyViT-5M weights on first run (~22 MB)."""
@@ -67,14 +72,26 @@ TINYVIT_5M = dict(
 # --------------------------------------------------------------------------- #
 
 
-def build_model() -> TinyViT:
-    ensure_checkpoint()
+def build_model(path: str | Path | None = None) -> TinyViT:
+    """TinyViT-5M with weights from `path`, else WEIGHTS (--weights), else CKPT.
+
+    Weights are loaded exactly as stored (float tensors). No quantization happens
+    here: cim_matmul quantizes per output column at the array boundary, for any
+    weights source alike.
+    """
+    path = path or WEIGHTS
+    if path is None:
+        ensure_checkpoint()
+        path = CKPT
     model = TinyViT(**TINYVIT_5M)
-    sd = torch.load(CKPT, map_location="cpu", weights_only=False)
+    sd = torch.load(path, map_location="cpu", weights_only=True)
     sd = sd["model"] if "model" in sd else sd
     sd = {k: v for k, v in sd.items() if not k.endswith("attention_bias_idxs")}
     missing, unexpected = model.load_state_dict(sd, strict=False)
     assert not unexpected, f"unexpected keys: {unexpected[:5]}"
+    # A missing key would silently keep random init, so refuse it.
+    missing = [k for k in missing if not k.endswith("attention_bias_idxs")]
+    assert not missing, f"{path}: missing keys {missing[:5]}"
     model.eval()
     return model
 
@@ -475,7 +492,17 @@ def main() -> None:
     p.add_argument("--adc-enabled", action="store_true")
     p.add_argument("--adc-bits", type=int, default=8)
     p.add_argument("--adc-vref", type=float, default=0.6)
+    p.add_argument("--weights", type=str, default=None,
+                   help="TinyViT-5M state_dict to use instead of the pretrained "
+                        "checkpoint, e.g. a QAT-trained one (pair it with the "
+                        "matching --weight-bits)")
     a = p.parse_args()
+
+    global WEIGHTS
+    if a.weights:
+        WEIGHTS = Path(a.weights)
+        if not WEIGHTS.is_file():
+            p.error(f"--weights: no such file: {WEIGHTS}")
 
     cfg = CIMConfig(rows=32, cols=32, act_bits=a.act_bits,
                     weight_bits=a.weight_bits, token_block=a.token_block,
@@ -486,6 +513,8 @@ def main() -> None:
     print(f"CIM fabric: {cfg.rows}x{cfg.cols}, {cfg.weight_bits}b weights, "
           f"{cfg.act_bits}b activations, {cfg.planes} plane, "
           f"{a.num_arrays} array(s), T={cfg.token_block or 'all tokens'}, {adc_str}")
+    if WEIGHTS is not None:
+        print(f"weights: {WEIGHTS}  (FP32 reference = this checkpoint, unquantized)")
 
     if a.compare_adc:
         run_adc_compare(cfg, a.images, a.sweep_adc_bits)
