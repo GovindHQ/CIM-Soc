@@ -17,7 +17,7 @@ shape, it:
 
 LOOP ORDER / TOKEN BLOCKING
 ---------------------------
-The loop nest is:
+With a single array the loop nest is:
 
     for token_block tb in ceil(N / T):
         for output_block ob in ceil(M / 32):
@@ -35,16 +35,61 @@ T is the single knob trading weight-write energy against partial-sum storage:
 
 Both extremes produce bit-identical results. Only the counters change. That is
 the point of exposing T rather than hardcoding a loop order.
+
+MULTIPLE ARRAYS — OUTPUT-TILE PARALLELISM
+------------------------------------------
+Pass `arrays=[arr0, arr1, ...]` instead of a single `array` to schedule across
+P identical CIMArray macros. Output tiles (not depth blocks, not tokens) are
+what get spread across arrays: the M axis is divided into ceil(M/32) output
+tiles, and those tiles are dealt out to arrays P at a time ("parallel groups").
+Within one group, one depth block's activation tile is broadcast to every
+active array simultaneously, each holding a DIFFERENT output tile's weights:
+
+    for token_block tb:
+        for group in ceil(output_tiles / P):
+            for depth_block db:                      <-- one hardware timestep
+                for slot, ob in enumerate(tiles in this group):
+                    arrays[slot].load_weight_tile(W[db, ob])
+                    acc[tb, ob] += arrays[slot].mvm(Xq[tb, db])
+
+If P does not divide the tile count, the last group is partially populated
+(some array slots idle that group) — see CIMConfig.n_arrays and the
+`array_parallel_utilization` field on MatmulTrace.
+
+This governs SCHEDULING only. The digital accumulation across depth blocks,
+the ADC (owned per-array, unchanged), quantization, and token blocking are
+untouched — addition is commutative, so which array produced which partial
+sum does not affect the numerical result. With P=1 the loop above collapses
+to exactly the single-array loop nest, in the exact same call order, so
+`arrays=[array]` reproduces `array=array` bit-for-bit.
+
+CYCLE MODEL
+-----------
+`CIMStats.array_ops` (and the other per-array counters) are summed across all
+P arrays, same as before — they represent total physical macro work, useful
+for energy accounting. They are NOT hardware wall-clock time when P > 1: four
+arrays firing in the same group is one hardware timestep, not four. Wall-clock
+time is tracked separately, on MatmulTrace.parallel_array_cycles, incremented
+once per (group, depth_block) — i.e. once per token-block-worth of cycles,
+regardless of how many of the P arrays were active in that group.
 """
 
 from __future__ import annotations
 
+import itertools
 from dataclasses import dataclass, field
 
 import numpy as np
 
 from .array import CIMArray, CIMConfig, CIMStats
 from .quant import quantize
+
+# Monotonic per-call token for weight-tile identity. Each cim_matmul call takes
+# one fresh value, so a tile id (call, db, ob) can match an array's resident
+# tile only within the SAME call (legitimate reuse across token blocks). The
+# previous key used id(W), which CPython reuses once W is freed; a later call
+# could then match a stale resident tile and silently skip its weight load.
+_MATMUL_CALL_IDS = itertools.count()
 
 
 # --------------------------------------------------------------------------- #
@@ -64,6 +109,28 @@ class MatmulTrace:
     output_blocks: int
     token_blocks: int
     stats: CIMStats
+
+    # Multi-array scheduling info. num_arrays=1 (the default/single-array case)
+    # gives parallel_groups == output_blocks, array_slots == output_blocks,
+    # active_array_invocations == output_blocks, utilization == 1.0 — i.e. this
+    # section is inert and uninformative for the single-array path.
+    num_arrays: int = 1
+    parallel_groups: int = 0
+    active_array_invocations: int = 0
+    array_slots: int = 0
+    parallel_array_cycles: int = 0
+
+    @property
+    def array_parallel_utilization(self) -> float:
+        """active array slots / total array slots across all parallel groups.
+
+        Separate from CIMStats.utilization (fraction of MACs inside one 32x32
+        tile that are real vs. zero-padding) — this measures how fully the P
+        parallel macros are populated with distinct output tiles, not how full
+        any one macro's rows/columns are.
+        """
+        return (self.active_array_invocations / self.array_slots
+                if self.array_slots else 0.0)
 
     @property
     def tiles(self) -> int:
@@ -94,6 +161,24 @@ class TraceLog:
             agg.merge(r.stats)
         return agg
 
+    def total_parallel_cycles(self) -> int:
+        """Wall-clock array-timestep count across every matmul in this log.
+
+        For any record with num_arrays=1 this equals that record's own
+        array_ops (see MatmulTrace docstring / TEST 1 in test_multi_array.py),
+        so this sum is directly comparable to CIMStats.array_ops from a
+        single-array run of the same workload — it is what "cycles" already
+        meant before multi-array existed, just correctly counted when P > 1.
+        """
+        return sum(r.parallel_array_cycles for r in self.records)
+
+    def parallel_utilization(self) -> float:
+        """Weighted array_parallel_utilization across every matmul in this log
+        (weighted by array_slots, not a plain average of per-call fractions)."""
+        slots = sum(r.array_slots for r in self.records)
+        active = sum(r.active_array_invocations for r in self.records)
+        return active / slots if slots else 0.0
+
     def by_tag(self) -> dict[str, CIMStats]:
         out: dict[str, CIMStats] = {}
         for r in self.records:
@@ -112,35 +197,84 @@ class TraceLog:
 def cim_matmul(
     X: np.ndarray,
     W: np.ndarray,
-    array: CIMArray,
+    array: CIMArray | None = None,
     tag: str = "matmul",
     log: TraceLog | None = None,
     act_signed: bool = True,
     quantize_weights: bool = True,
+    arrays: list[CIMArray] | None = None,
+    op: str | None = None,
 ) -> np.ndarray:
     """Compute X @ W on the simulated CIM fabric.
 
     Args:
         X: [N, K] float activations. Rows are tokens (or output pixels, for an
            im2col'd convolution — the scheduler does not care which).
-        W: [K, M] float weights. Held stationary in the array.
-        array: the CIMArray instance. Its stats accumulate across calls.
+        W: [K, M] float weights. Held stationary in the array(s).
+        array: a single CIMArray instance (unchanged single-array path).
+        arrays: OR a list of P identical CIMArray instances to schedule across
+           using output-tile parallelism (see module docstring). Exactly one
+           of `array` / `arrays` must be given. `arrays=[a]` (a length-1 list)
+           is equivalent to `array=a`.
         tag: label for the trace record, e.g. "qkv_proj", "qk_t", "av".
         act_signed: False for non-negative activations such as post-softmax
-           attention probabilities, where a sign bit would be wasted.
+           attention probabilities, where a sign bit would be wasted. On the
+           analog path this also selects the input DAC's code domain.
+        op: operation label ("qkv", "qk", "av", "proj", or None). Only used by
+           the physical analog path, where it selects the per-operation
+           pre-ADC gain (AnalogConfig.gain_per_op, falling back to
+           gain_default) and the AnalogStats bucket. Ignored on the legacy
+           path.
 
     Returns:
         [N, M] float result.
     """
+    if arrays is not None:
+        array_list = list(arrays)
+        assert len(array_list) >= 1, "`arrays` must contain at least one CIMArray"
+    elif array is not None:
+        array_list = [array]
+    else:
+        raise ValueError("cim_matmul requires either `array` or `arrays`")
+
+    cfg = array_list[0].cfg
+    R, C = cfg.rows, cfg.cols
+    for a in array_list[1:]:
+        assert (a.cfg.rows, a.cfg.cols) == (R, C), \
+            "all arrays in `arrays` must share the same rows/cols geometry"
+        assert (a.cfg.weight_bits, a.cfg.act_bits) == (cfg.weight_bits, cfg.act_bits), \
+            "all arrays in `arrays` must share the same operand precision"
+    P = len(array_list)
+
+    # Select the per-operation analog gain ONCE for this whole matmul, so every
+    # depth block of every output tile shares one gain and therefore one LSB_P.
+    # This is what makes the integer accumulation below physically meaningful
+    # (spec 8/9). Gain is a configuration parameter; it is never derived here
+    # from the data.
+    _chains = [getattr(a, "chain", None) for a in array_list]
+    _chain = _chains[0]
+    if _chain is not None:
+        assert all(c is not None for c in _chains), \
+            "cannot mix analog-enabled and legacy arrays in one `arrays` pool"
+        for c in _chains:
+            c.set_operation(op, act_signed=act_signed)
+        # One accumulator spans all P arrays, so every array must produce codes
+        # in the same analog scale domain (the check DigitalAccumulator.add
+        # performs per block, done here once per matmul).
+        assert all(c.domain_key == _chain.domain_key for c in _chains), \
+            "all arrays in `arrays` must share one analog scale domain " \
+            "(DAC / macro / gain / ADC configuration)"
+    else:
+        assert all(c is None for c in _chains), \
+            "cannot mix analog-enabled and legacy arrays in one `arrays` pool"
+    _analog_scale = _chain.lsb_p if _chain is not None else 1.0
+
     X = np.asarray(X, dtype=np.float64)
     W = np.asarray(W, dtype=np.float64)
     assert X.ndim == 2 and W.ndim == 2, "cim_matmul takes 2-D operands"
     N, K = X.shape
     assert W.shape[0] == K, f"inner dimensions disagree: {X.shape} @ {W.shape}"
     M = W.shape[1]
-
-    cfg = array.cfg
-    R, C = cfg.rows, cfg.cols
 
     # -- 1. quantize -------------------------------------------------------- #
     # Activation scale: one per token, constant along K (axis=1 is collapsed).
@@ -153,7 +287,7 @@ def cim_matmul(
 
     # -- 2. pad to tile boundaries ------------------------------------------ #
     n_db = (K + R - 1) // R          # depth blocks
-    n_ob = (M + C - 1) // C          # output blocks
+    n_ob = (M + C - 1) // C          # output blocks (== "output tiles")
     Kp, Mp = n_db * R, n_ob * C
 
     xq_p = np.zeros((N, Kp), dtype=np.int32)
@@ -161,63 +295,111 @@ def cim_matmul(
     wq_p = np.zeros((Kp, Mp), dtype=np.int32)
     wq_p[:K, :M] = wq
 
-    # -- 3. token blocking -------------------------------------------------- #
+    # -- 3. token blocking (unchanged) --------------------------------------- #
     T = cfg.token_block or N
     T = max(1, min(T, N))
     n_tb = (N + T - 1) // T
 
+    # -- 3b. multi-array scheduling geometry --------------------------------- #
+    # Output tiles are dealt out P at a time ("parallel groups"). P=1 gives
+    # parallel_groups == n_ob, i.e. one tile per group — the single-array case.
+    parallel_groups = (n_ob + P - 1) // P
+    array_slots = parallel_groups * P
+    active_array_invocations = n_ob
+    peak_active_per_group = min(P, n_ob) if n_ob else 0
+
     acc = np.zeros((N, Mp), dtype=np.int64)
 
-    stats_before = _snapshot(array.stats)
+    stats_before = [_snapshot(a.stats) for a in array_list]
+    parallel_array_cycles = 0
+    call_id = next(_MATMUL_CALL_IDS)     # tile identity scope: this call only
 
     # -- 4. the loop nest --------------------------------------------------- #
+    # Depth block is the outer loop within a group: one activation tile is
+    # broadcast to every active array in that group before moving to the next
+    # depth block, matching the "x_tile fans out to CIM[0..P-1] simultaneously"
+    # hardware picture. With P=1 this generates the exact same (ob, db) call
+    # sequence, in the exact same order, as the previous single-array nesting.
     for tb in range(n_tb):
         t0, t1 = tb * T, min((tb + 1) * T, N)
-        for ob in range(n_ob):
-            c0 = ob * C
-            useful_cols = min(C, M - c0)
+        for group in range(parallel_groups):
+            ob_lo = group * P
+            ob_hi = min(ob_lo + P, n_ob)
+            group_obs = range(ob_lo, ob_hi)   # output tiles active this group
+
             for db in range(n_db):
                 r0 = db * R
                 useful_rows = min(R, K - r0)
 
-                array.load_weight_tile(wq_p[r0:r0 + R, c0:c0 + C],
-                                       tile_id=(id(W), db, ob))
-                y = array.mvm(xq_p[t0:t1, r0:r0 + R],
-                              useful_rows=useful_rows,
-                              useful_cols=useful_cols)
-                acc[t0:t1, c0:c0 + C] += y
+                for slot, ob in enumerate(group_obs):   # one array per tile
+                    c0 = ob * C
+                    useful_cols = min(C, M - c0)
+                    arr = array_list[slot]
+
+                    arr.load_weight_tile(wq_p[r0:r0 + R, c0:c0 + C],
+                                         tile_id=(call_id, db, ob))
+                    y = arr.mvm(xq_p[t0:t1, r0:r0 + R],
+                               useful_rows=useful_rows,
+                               useful_cols=useful_cols)
+                    acc[t0:t1, c0:c0 + C] += y
+
+                # All arrays active in this group ran depth block `db` at the
+                # same modeled hardware timestep: count it once, not P times.
+                parallel_array_cycles += (t1 - t0)
 
     # -- 5. single end-of-chain rescale ------------------------------------- #
-    out = acc[:, :M].astype(np.float64) * sx * sw
+    # Two scales, deliberately kept separate (spec 17/20):
+    #   _analog_scale = LSB_P, the hardware code->column-sum scale (1.0 when the
+    #                   analog path is off, so legacy behaviour is unchanged);
+    #   sx * sw       = the neural-network quantization scales.
+    out = acc[:, :M].astype(np.float64) * _analog_scale * sx * sw
 
-    # -- bookkeeping -------------------------------------------------------- #
-    array.stats.max_abs_accum = max(array.stats.max_abs_accum,
-                                    int(np.abs(acc).max()) if acc.size else 0)
-    array.stats.psum_words_live = max(array.stats.psum_words_live, T * C)
+    # -- bookkeeping ---------------------------------------------------------#
+    # PSUM is a single shared digital accumulator downstream of all P arrays
+    # (see module docstring diagram), so its peak-usage bookkeeping is not any
+    # one macro's property. array_list[0] is used as the designated location
+    # for this running counter, exactly as the (only) array already was in the
+    # single-array case — this is bookkeeping placement only, not a numerics
+    # change, and does not affect any array's own MAC/write/ADC counters.
+    psum_peak = T * C * peak_active_per_group
+    array_list[0].stats.max_abs_accum = max(array_list[0].stats.max_abs_accum,
+                                            int(np.abs(acc).max()) if acc.size else 0)
+    array_list[0].stats.psum_words_live = max(array_list[0].stats.psum_words_live,
+                                              psum_peak)
 
     if log is not None:
-        delta = _delta(stats_before, array.stats)
-        delta.psum_words_live = T * C
+        agg = CIMStats()
+        for a, before in zip(array_list, stats_before):
+            agg.merge(_delta(before, a.stats))
+        agg.psum_words_live = psum_peak
         log.add(MatmulTrace(tag=tag, N=N, K=K, M=M,
                             depth_blocks=n_db, output_blocks=n_ob,
-                            token_blocks=n_tb, stats=delta))
+                            token_blocks=n_tb, stats=agg,
+                            num_arrays=P,
+                            parallel_groups=parallel_groups,
+                            active_array_invocations=active_array_invocations,
+                            array_slots=array_slots,
+                            parallel_array_cycles=parallel_array_cycles))
     return out
 
 
 def cim_matmul_batched(
     X: np.ndarray,
     W: np.ndarray,
-    array: CIMArray,
+    array: CIMArray | None = None,
     tag: str = "matmul",
     log: TraceLog | None = None,
     act_signed: bool = True,
+    arrays: list[CIMArray] | None = None,
+    op: str | None = None,
 ) -> np.ndarray:
     """Batched X @ W over arbitrary leading dimensions.
 
     X: [..., N, K], W: [..., K, M]. Leading dims must match. Each batch element
-    is a separate scheduling problem on the same physical array, executed in
-    sequence — which is exactly what a single-array fabric does with per-head
-    attention matmuls.
+    is a separate scheduling problem on the same physical array(s), executed in
+    sequence — which is exactly what a fabric does with per-head attention
+    matmuls. Pass `arrays=[...]` to schedule each batch element's output tiles
+    across P arrays; see `cim_matmul`.
     """
     X = np.asarray(X, dtype=np.float64)
     W = np.asarray(W, dtype=np.float64)
@@ -232,7 +414,7 @@ def cim_matmul_batched(
     out = np.empty((Xf.shape[0], N, M), dtype=np.float64)
     for b in range(Xf.shape[0]):
         out[b] = cim_matmul(Xf[b], Wf[b], array, tag=tag, log=log,
-                            act_signed=act_signed)
+                            act_signed=act_signed, arrays=arrays, op=op)
     return out.reshape(*lead, N, M)
 
 

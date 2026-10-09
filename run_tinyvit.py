@@ -40,6 +40,11 @@ CKPT = HERE / "tinyvit5m.pth"
 CKPT_URL = ("https://github.com/wkcn/TinyViT-model-zoo/releases/download/"
             "checkpoints/tiny_vit_5m_22kto1k_distill.pth")
 
+# Alternative weights source (e.g. a QAT-trained TinyViT-5M state_dict), set by
+# --weights. None => the pretrained CKPT above. Module-level so that every mode
+# (and every build_model() call inside a sweep) uses the same weights.
+WEIGHTS: Path | None = None
+
 
 def ensure_checkpoint() -> None:
     """Fetch the pretrained TinyViT-5M weights on first run (~22 MB)."""
@@ -67,14 +72,26 @@ TINYVIT_5M = dict(
 # --------------------------------------------------------------------------- #
 
 
-def build_model() -> TinyViT:
-    ensure_checkpoint()
+def build_model(path: str | Path | None = None) -> TinyViT:
+    """TinyViT-5M with weights from `path`, else WEIGHTS (--weights), else CKPT.
+
+    Weights are loaded exactly as stored (float tensors). No quantization happens
+    here: cim_matmul quantizes per output column at the array boundary, for any
+    weights source alike.
+    """
+    path = path or WEIGHTS
+    if path is None:
+        ensure_checkpoint()
+        path = CKPT
     model = TinyViT(**TINYVIT_5M)
-    sd = torch.load(CKPT, map_location="cpu", weights_only=False)
+    sd = torch.load(path, map_location="cpu", weights_only=True)
     sd = sd["model"] if "model" in sd else sd
     sd = {k: v for k, v in sd.items() if not k.endswith("attention_bias_idxs")}
     missing, unexpected = model.load_state_dict(sd, strict=False)
     assert not unexpected, f"unexpected keys: {unexpected[:5]}"
+    # A missing key would silently keep random init, so refuse it.
+    missing = [k for k in missing if not k.endswith("attention_bias_idxs")]
+    assert not missing, f"{path}: missing keys {missing[:5]}"
     model.eval()
     return model
 
@@ -195,6 +212,58 @@ def run_full(cfg: CIMConfig, n_images: int, cim_out_proj: bool) -> None:
     print(f"  top-{k} overlap: " + ", ".join(f"{a}/{b}" for a, b in agree))
 
 
+def run_full_multi_array(cfg: CIMConfig, n_images: int, num_arrays: int,
+                         cim_out_proj: bool) -> None:
+    """Same as run_full, but scheduled across a pool of `num_arrays` arrays."""
+    model = build_model()
+    x = synthetic_images(n_images)
+
+    with torch.no_grad():
+        ref_logits = model(x)
+
+    arrays = [CIMArray(cfg) for _ in range(num_arrays)]
+    log = TraceLog()
+    replaced = convert_attention(model, arrays=arrays, log=log,
+                                 cim_out_proj=cim_out_proj)
+    print(f"replaced {len(replaced)} attention modules, sharing a pool of "
+          f"{num_arrays} arrays")
+
+    with torch.no_grad():
+        cim_logits = model(x)
+
+    print()
+    print(report(log))
+
+    tot = log.total()
+    cycles = log.total_parallel_cycles()
+    speedup = tot.array_ops / cycles if cycles else float("nan")
+    print()
+    print("=" * 78)
+    print("PARALLELISM")
+    print("=" * 78)
+    print(f"  array pool size (P)         : {num_arrays}")
+    print(f"  total physical array_ops    : {tot.array_ops:,}  "
+          f"(= what P=1 wall-clock cycles would have been)")
+    print(f"  wall-clock parallel cycles  : {cycles:,}")
+    print(f"  ideal speedup vs P=1        : {speedup:.2f}x")
+    print(f"  parallel utilization        : {log.parallel_utilization():.1%}  "
+          f"(active array slots / total array slots across all groups)")
+
+    print()
+    print("=" * 78)
+    print("ACCURACY  (synthetic inputs — see the caveat in the docstring)")
+    print("=" * 78)
+    ref_top = ref_logits.argmax(-1)
+    cim_top = cim_logits.argmax(-1)
+    for i in range(x.shape[0]):
+        r, c = ref_logits[i], cim_logits[i]
+        print(f"  image {i}: top-1 float={ref_top[i].item():>4}  "
+              f"cim={cim_top[i].item():>4}  "
+              f"{'MATCH' if ref_top[i]==cim_top[i] else 'DIFFER'}   "
+              f"logit cos={cosine_sim(c.numpy(), r.numpy()):.4f}   "
+              f"rel err={(c-r).norm()/r.norm():.2%}")
+
+
 def run_ablation(cfg: CIMConfig, n_images: int) -> None:
     """Which of the three matmul sites actually costs the accuracy?
 
@@ -264,6 +333,111 @@ def run_bit_sweep(cfg: CIMConfig, n_images: int) -> None:
               f"{agree:>12.0%}{ov:>13.1f}/5")
 
 
+def run_adc_compare(cfg: CIMConfig, n_images: int, adc_bits_list: list[int]) -> None:
+    """Error contributed by the ADC alone, isolated from operand quantization.
+
+    Row 1 is the float baseline. Row 2 is the existing ADC-disabled CIM path
+    (exact integer column sums) at cfg's weight_bits/act_bits — this is what
+    every earlier --ablate / --sweep-bits run in this file already measured.
+    Every row after that turns the ADC on at a given resolution, holding
+    weight_bits/act_bits fixed, so the DELTA between row 2 and any ADC row is
+    specifically the ADC's contribution, not operand quantization's.
+    """
+    x = synthetic_images(n_images)
+    model = build_model()
+    with torch.no_grad():
+        ref = model(x)
+
+    print(f"\noperand precision fixed at {cfg.weight_bits}b weights / "
+          f"{cfg.act_bits}b activations, Vref={cfg.adc_vref}V")
+    print(f"\n{'config':<20}{'logit rel err':>15}{'logit cos':>12}"
+          f"{'top-1 agree':>13}{'adc conv.':>12}{'adc sat.':>10}")
+    print("-" * 82)
+
+    rows = [("ADC disabled (exact)", False, None)]
+    for b in adc_bits_list:
+        rows.append((f"ADC {b}-bit", True, b))
+
+    for label, adc_on, adc_bits in rows:
+        model = build_model()
+        c = CIMConfig(rows=cfg.rows, cols=cfg.cols, weight_bits=cfg.weight_bits,
+                      act_bits=cfg.act_bits, token_block=cfg.token_block,
+                      adc_enabled=adc_on, adc_bits=adc_bits or 8,
+                      adc_vref=cfg.adc_vref)
+        array = CIMArray(c)
+        log = TraceLog()
+        convert_attention(model, array, log=log)
+        with torch.no_grad():
+            out = model(x)
+        err = ((out - ref).norm() / ref.norm()).item()
+        cos = cosine_sim(out.numpy(), ref.numpy())
+        agree = (out.argmax(-1) == ref.argmax(-1)).float().mean().item()
+        tot = log.total()
+        print(f"{label:<20}{err:>14.2%}{cos:>12.4f}{agree:>12.0%}"
+              f"{tot.adc_conversions:>12,}{tot.adc_saturations:>10,}")
+
+    print("\n  'adc conv.' = 0 on the disabled row by construction (no ADC "
+          "calls made). Saturation count > 0 would mean the configured "
+          "full_scale is too small for this workload at this precision — "
+          "not expected here since full_scale is sized from weight_bits/"
+          "act_bits directly (see array.py's ADC docstring).")
+
+
+def run_parallel_compare(base_cfg: CIMConfig, n_images: int,
+                         array_counts: list[int]) -> None:
+    """Area(=array count placeholder — see note)/efficiency/parallelism vs P.
+
+    For each P: build a fresh pool of P identical arrays, run the full model,
+    and report:
+        accuracy       — must not move with P (parallelism is a scheduling
+                          choice, not a numerical one; this is the regression
+                          check, same idea as TEST 4 in test_multi_array.py)
+        MAC utilization — CIMStats.utilization: fraction of issued MACs inside
+                          one 32x32 tile that are real data, not padding.
+                          Unaffected by P; printed as a sanity check.
+        parallel util.  — MatmulTrace.array_parallel_utilization, weighted
+                          across the whole log: how fully the P macros are
+                          populated with distinct output tiles.
+        ideal speedup   — total_array_ops / total_parallel_cycles. array_ops
+                          summed across arrays is the total physical work,
+                          which does NOT depend on P (see BONUS test in
+                          test_multi_array.py); parallel_cycles is wall-clock.
+                          Their ratio is exactly what P=1's wall-clock would
+                          have been, divided by this run's wall-clock — i.e.
+                          the ideal speedup, no separate P=1 run required.
+        relative area   — NOT a real area number. See the note below.
+    """
+    x = synthetic_images(n_images)
+    model = build_model()
+    with torch.no_grad():
+        ref = model(x)
+
+    print(f"\n{'P (arrays)':<12}{'logit rel err':>15}{'MAC util':>10}"
+          f"{'parallel util':>15}{'ideal speedup':>15}{'rel. area*':>12}")
+    print("-" * 79)
+    for P in array_counts:
+        model = build_model()
+        arrays = [CIMArray(base_cfg) for _ in range(P)]
+        log = TraceLog()
+        convert_attention(model, arrays=arrays, log=log)
+        with torch.no_grad():
+            out = model(x)
+        err = ((out - ref).norm() / ref.norm()).item()
+        tot = log.total()
+        cycles = log.total_parallel_cycles()
+        speedup = tot.array_ops / cycles if cycles else float("nan")
+        print(f"{P:<12}{err:>14.2%}{tot.utilization:>10.1%}"
+              f"{log.parallel_utilization():>15.1%}{speedup:>14.2f}x"
+              f"{P:>11}x")
+
+    print(f"\n  * 'rel. area' = P (one placeholder unit per macro). This is NOT"
+          f"\n    a real area estimate — no per-macro or per-ADC area/mm^2 "
+          f"number exists"
+          f"\n    anywhere in this codebase yet. See the note in the chat "
+          f"reply for what's")
+    print(f"    needed to replace it with a real figure.")
+
+
 def run_token_block_sweep(cfg: CIMConfig) -> None:
     """Same stage-3 workload at several token block sizes T."""
     model = build_model()
@@ -301,20 +475,52 @@ def main() -> None:
     p.add_argument("--sweep-token-block", action="store_true")
     p.add_argument("--ablate", action="store_true")
     p.add_argument("--sweep-bits", action="store_true")
+    p.add_argument("--compare-adc", action="store_true",
+                   help="float baseline vs ADC-disabled vs ADC-enabled at "
+                        "--sweep-adc-bits resolutions, 1 array")
+    p.add_argument("--sweep-adc-bits", type=int, nargs="+", default=[4, 6, 8, 10])
+    p.add_argument("--compare-arrays", action="store_true",
+                   help="accuracy/utilization/speedup vs --sweep-arrays array counts")
+    p.add_argument("--sweep-arrays", type=int, nargs="+", default=[1, 2, 4, 8])
     p.add_argument("--images", type=int, default=2)
     p.add_argument("--act-bits", type=int, default=4)
     p.add_argument("--weight-bits", type=int, default=4)
     p.add_argument("--token-block", type=int, default=None)
     p.add_argument("--cim-out-proj", action="store_true")
+    p.add_argument("--num-arrays", type=int, default=1,
+                   help="parallel array pool size for the default full-model run")
+    p.add_argument("--adc-enabled", action="store_true")
+    p.add_argument("--adc-bits", type=int, default=8)
+    p.add_argument("--adc-vref", type=float, default=0.6)
+    p.add_argument("--weights", type=str, default=None,
+                   help="TinyViT-5M state_dict to use instead of the pretrained "
+                        "checkpoint, e.g. a QAT-trained one (pair it with the "
+                        "matching --weight-bits)")
     a = p.parse_args()
 
+    global WEIGHTS
+    if a.weights:
+        WEIGHTS = Path(a.weights)
+        if not WEIGHTS.is_file():
+            p.error(f"--weights: no such file: {WEIGHTS}")
+
     cfg = CIMConfig(rows=32, cols=32, act_bits=a.act_bits,
-                    weight_bits=a.weight_bits, token_block=a.token_block)
+                    weight_bits=a.weight_bits, token_block=a.token_block,
+                    adc_enabled=a.adc_enabled, adc_bits=a.adc_bits,
+                    adc_vref=a.adc_vref)
+    adc_str = (f"ADC {cfg.adc_bits}b @ Vref={cfg.adc_vref}V"
+              if cfg.adc_enabled else "ADC disabled (exact column sums)")
     print(f"CIM fabric: {cfg.rows}x{cfg.cols}, {cfg.weight_bits}b weights, "
           f"{cfg.act_bits}b activations, {cfg.planes} plane, "
-          f"{cfg.n_arrays} array, T={cfg.token_block or 'all tokens'}")
+          f"{a.num_arrays} array(s), T={cfg.token_block or 'all tokens'}, {adc_str}")
+    if WEIGHTS is not None:
+        print(f"weights: {WEIGHTS}  (FP32 reference = this checkpoint, unquantized)")
 
-    if a.ablate:
+    if a.compare_adc:
+        run_adc_compare(cfg, a.images, a.sweep_adc_bits)
+    elif a.compare_arrays:
+        run_parallel_compare(cfg, a.images, a.sweep_arrays)
+    elif a.ablate:
         run_ablation(cfg, a.images)
     elif a.sweep_bits:
         run_bit_sweep(cfg, a.images)
@@ -322,6 +528,8 @@ def main() -> None:
         run_token_block_sweep(cfg)
     elif a.stage3_only:
         run_stage3_only(cfg)
+    elif a.num_arrays > 1:
+        run_full_multi_array(cfg, a.images, a.num_arrays, a.cim_out_proj)
     else:
         run_full(cfg, a.images, a.cim_out_proj)
 

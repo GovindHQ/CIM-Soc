@@ -19,18 +19,80 @@ PHYSICAL MODEL
 
 WHAT IS AND IS NOT MODELLED
 ---------------------------
-  Modelled: integer arithmetic at 4b x 4b, exact tile geometry, zero-padding of
-            ragged edges, weight-write counts, per-cycle input broadcast counts,
-            column-sum readout counts, row/column utilization.
-  Not modelled (this version): ADC quantization of the column sum, DAC
-            non-linearity, analog noise, IR drop, write settle time, multiple
-            parallel arrays, multi-plane residency, bit-slicing to 8b.
+  Modelled: integer arithmetic at 4b x 4b (or 8b x 8b), exact tile geometry,
+            zero-padding of ragged edges, weight-write counts, per-cycle input
+            broadcast counts, column-sum readout counts, row/column
+            utilization, and (when cfg.adc_enabled) an 8-bit unipolar ADC on
+            every column output, applied once per depth block.
+  Not modelled (this version): IR drop, write settle time, multi-plane
+            residency, bit-slicing to 8b. (Multiple parallel arrays are
+            scheduled by matmul.py; this class is always one macro.)
 
-The column sum is therefore returned at full integer precision. With 32 rows of
-4b x 4b products the worst case magnitude is 32 * 8 * 8 = 2048, so the
-accumulator needs ~12 bits before any cross-depth accumulation, and
-12 + ceil(log2(n_depth_blocks)) bits after. This is reported in the stats so
-the ADC resolution decision has a number attached to it when it is made.
+TWO MUTUALLY EXCLUSIVE COMPUTE MODES
+------------------------------------
+  Legacy (cfg.analog is None or not enabled): exact integer MAC, optionally
+            followed by the functional `adc_enabled` ADC below. Returns
+            column-sum units. This is the default and is unchanged.
+  Physical analog (cfg.analog = AnalogConfig(enabled=True)): the
+            cim_sim.analog chain (input DAC -> C2C macro -> pre-ADC gain ->
+            SAR ADC) replaces the MAC AND the legacy ADC. Returns signed ADC
+            CODES; matmul.py rescales once by the chain's LSB_P. In this mode
+            cfg.adc_enabled / adc_bits / adc_vref are ignored — the SAR ADC is
+            configured by AnalogConfig.adc_bits / adc_vref instead — and
+            max_abs_colsum is not recorded (no exact column sum exists).
+            DAC/macro/amplifier/comparator nonidealities are hooks on
+            AnalogConfig, all ideal by default.
+
+With 32 rows of 4b x 4b products the worst case column-sum magnitude is
+32 * 8 * 8 = 2048, so the exact (pre-ADC) sum needs ~12 bits before any
+cross-depth accumulation, and 12 + ceil(log2(n_depth_blocks)) bits after.
+
+ADC MODEL (cfg.adc_enabled)
+----------------------------
+Every column has its own ADC (32 columns -> 32 ADCs), applied to that column's
+output AFTER each single-depth-block MVM and BEFORE cross-depth digital
+accumulation (that accumulation happens one level up, in matmul.py). The
+per-tile analog column sum is not itself accumulated across depth blocks; only
+its digitized value is.
+
+The ADC is modelled functionally: 8-bit resolution, unipolar input range
+[0, Vref], Vref = 0.6 V by default (cfg.adc_bits, cfg.adc_vref).
+
+PHYSICAL ASSUMPTION — column sum -> ADC input voltage
+------------------------------------------------------
+The column sum out of the array is signed (two's-complement quantized
+operands), but the ADC is unipolar. The existing code does not specify a
+voltage mapping directly, but it DOES already define, in this docstring, the
+configuration's worst-case column-sum magnitude:
+
+    full_scale = rows * 2^(weight_bits - 1) * 2^(act_bits - 1)
+
+This is data-independent (depends only on array geometry and operand bit
+widths, never on the values being multiplied), which is the property a real
+ADC full-scale must have — it is sized for what the array CAN produce, not for
+what a particular input happens to produce.
+
+That bound is used as the ADC's symmetric input range, mapped onto [0, Vref]
+with offset-binary encoding:
+
+    V_in(y) = Vref * (y + full_scale) / (2 * full_scale)      y = -FS -> 0 V
+                                                                 y = +FS -> Vref
+    code     = round(V_in / Vref * (2^adc_bits - 1)), clipped to [0, 2^adc_bits-1]
+
+The digitized value handed back to the scheduler is the code decoded back into
+the same signed column-sum units used everywhere else in the pipeline, so the
+accumulator contract (`acc += y`) is unchanged; the ADC's effect is purely a
+resolution loss (256 levels across the full symmetric range) plus saturation
+clipping at +/- full_scale.
+
+KNOWN LIMITATION: full_scale assumes both operands use the full signed
+two's-complement range. The one place that isn't true is post-softmax AV
+activations, which are quantized unsigned (0..2^act_bits-1, see
+quant.act_signed=False) and so never reach the negative extreme. full_scale is
+therefore conservative (slightly coarser ADC step size than strictly
+necessary) for that case — never wrong, just not maximally tight. Fixing this
+exactly would require threading operand signedness into CIMArray, which is out
+of scope for this change.
 
 BATCHING NOTE
 -------------
@@ -70,12 +132,29 @@ class CIMConfig:
     # maximum partial-sum storage). T = 1 is the opposite extreme.
     token_block: int | None = None
 
+    # ADC on every column output, applied per depth block before cross-depth
+    # accumulation. Disabled by default so existing exact-integer behavior is
+    # unchanged unless explicitly opted in.
+    adc_enabled: bool = False
+    adc_bits: int = 8
+    adc_vref: float = 0.6   # volts, unipolar full-scale reference
+
+    # Physical analog datapath (DAC -> C2C macro -> pre-ADC gain -> SAR ADC).
+    # When set, mvm() executes the analog chain instead of the digital
+    # MAC + normalised-voltage abstraction, and returns signed ADC CODES
+    # rather than column-sum units (matmul.py rescales once via LSB_P).
+    # None => legacy behaviour, bit-identical to before.
+    analog: object | None = None
+
     def __post_init__(self):
-        if self.planes != 1 or self.n_arrays != 1:
+        if self.planes != 1:
             raise NotImplementedError(
-                "This model is deliberately single-array, single-plane. "
-                "Set planes=1, n_arrays=1."
+                "This model is deliberately single-plane. Set planes=1."
             )
+        # n_arrays is descriptive here: CIMArray itself always models exactly
+        # ONE 32x32 macro regardless of this field's value. Multiple macros are
+        # built by the caller as `[CIMArray(cfg) for _ in range(cfg.n_arrays)]`
+        # and scheduled across output tiles by matmul.py's cim_matmul(arrays=...).
 
 
 # --------------------------------------------------------------------------- #
@@ -96,6 +175,8 @@ class CIMStats:
     psum_words_live: int = 0        # peak partial-sum words that must be held
     max_abs_colsum: int = 0         # largest column sum observed, pre-accum
     max_abs_accum: int = 0          # largest value after depth accumulation
+    adc_conversions: int = 0        # ADC conversions performed (0 if disabled)
+    adc_saturations: int = 0        # of those, how many clipped to +/- full_scale
 
     def merge(self, other: "CIMStats") -> None:
         self.weight_tile_writes += other.weight_tile_writes
@@ -107,6 +188,8 @@ class CIMStats:
         self.psum_words_live = max(self.psum_words_live, other.psum_words_live)
         self.max_abs_colsum = max(self.max_abs_colsum, other.max_abs_colsum)
         self.max_abs_accum = max(self.max_abs_accum, other.max_abs_accum)
+        self.adc_conversions += other.adc_conversions
+        self.adc_saturations += other.adc_saturations
 
     @property
     def utilization(self) -> float:
@@ -125,6 +208,50 @@ class CIMStats:
 
 
 # --------------------------------------------------------------------------- #
+# ADC helper
+# --------------------------------------------------------------------------- #
+
+
+def _adc_convert(y: np.ndarray, bits: int, full_scale: int
+                 ) -> tuple[np.ndarray, int]:
+    """Functional 8-bit (or `bits`-bit) unipolar ADC.
+
+    Maps the signed column sum `y` onto a unipolar [0, Vref] input using
+    offset-binary encoding around a fixed, data-independent `full_scale` (see
+    the "PHYSICAL ASSUMPTION" note in this module's docstring), then decodes
+    the resulting code back into the same signed integer domain the rest of
+    the pipeline uses, so callers see only a resolution/saturation loss, not a
+    representation change.
+
+    Args:
+        y: exact signed column sums, any shape.
+        bits: ADC resolution.
+        full_scale: symmetric input range [-full_scale, +full_scale] that maps
+            onto [0, Vref]. Must be a configuration-derived constant, not
+            computed from `y` itself (a data-dependent full scale would make
+            the ADC input-dependent, which is not physical).
+
+    Returns:
+        (y_digitized, n_saturated) where y_digitized is the same shape as y,
+        rounded to the nearest representable integer, and n_saturated counts
+        how many entries were clipped to +/- full_scale before conversion.
+    """
+    qmax = 2 ** bits - 1
+    fs = full_scale
+
+    y_clipped = np.clip(y, -fs, fs)
+    n_sat = int(np.sum(y != y_clipped))
+
+    # V_in / Vref, in [0, 1]; Vref itself cancels out of this normalized form.
+    v_norm = (y_clipped.astype(np.float64) + fs) / (2.0 * fs)
+    code = np.clip(np.rint(v_norm * qmax), 0, qmax)
+
+    # Decode the code back into signed column-sum units.
+    y_digitized = np.rint(code / qmax * (2.0 * fs) - fs).astype(np.int64)
+    return y_digitized, n_sat
+
+
+# --------------------------------------------------------------------------- #
 # The array
 # --------------------------------------------------------------------------- #
 
@@ -139,6 +266,23 @@ class CIMArray:
         self._W_id: int | None = None           # identity of resident tile
 
         self.w_min, self.w_max = int_range(self.cfg.weight_bits, signed=True)
+
+        # Physical analog chain, if configured. Built once per array so that
+        # K_MAC / LSB_P are derived from architecture exactly once and never
+        # from data (see cim_sim/analog/chain.py).
+        self.chain = None
+        if getattr(self.cfg, "analog", None) is not None and self.cfg.analog.enabled:
+            from .analog import AnalogChain
+            self.chain = AnalogChain(self.cfg.analog, rows=self.cfg.rows,
+                                     weight_bits=self.cfg.weight_bits,
+                                     act_bits=self.cfg.act_bits)
+
+        # Data-independent ADC full-scale: the worst-case column sum this
+        # geometry and these operand bit widths can ever produce. See the
+        # "PHYSICAL ASSUMPTION" note in the module docstring.
+        self.adc_full_scale = (self.cfg.rows
+                               * 2 ** (self.cfg.weight_bits - 1)
+                               * 2 ** (self.cfg.act_bits - 1))
 
     # ---- weight path ---------------------------------------------------- #
 
@@ -159,6 +303,10 @@ class CIMArray:
 
         self._W = W.astype(np.int32)
         self._W_id = tile_id
+        if self.chain is not None:
+            # split signed weight into (sign, capacitor code) at write time;
+            # the C2C ladder never sees a two's-complement word.
+            self.chain.program(self._W)
         self.stats.weight_tile_writes += 1
         self.stats.weight_cell_writes += self.cfg.rows * self.cfg.cols
 
@@ -186,6 +334,32 @@ class CIMArray:
             f"input vector must have {self.cfg.rows} entries, got {x.shape[1]}"
 
         T = x.shape[0]
+
+        if self.chain is not None:
+            # ---- physical analog datapath ------------------------------- #
+            # X_q -> DAC -> V_IA -> C2C macro -> V_OA -> gain -> SAR ADC.
+            # Returns SIGNED ADC CODES; matmul.py accumulates them as integers
+            # and applies LSB_P once (see analog/digital.py).
+            adc = self.chain.adc
+            clipped_before = adc.n_clipped_hi + adc.n_clipped_lo
+            d = self.chain.execute(x)
+            ur = self.cfg.rows if useful_rows is None else useful_rows
+            uc = self.cfg.cols if useful_cols is None else useful_cols
+            st = self.stats
+            st.array_ops += T
+            st.column_sums_read += T * self.cfg.cols
+            st.macs_issued += T * self.cfg.rows * self.cfg.cols
+            st.macs_useful += T * ur * uc
+            st.adc_conversions += T * self.cfg.cols
+            # Same semantics as the legacy path: count THIS call's clipped
+            # conversions, so the counter is per-array-stats and reset_stats()
+            # really zeroes it. The SARADC's own n_clipped_* counters are the
+            # chain's lifetime diagnostics and are deliberately left alone.
+            st.adc_saturations += (adc.n_clipped_hi + adc.n_clipped_lo
+                                   - clipped_before)
+            return d
+
+        # ---- legacy digital-MAC abstraction (unchanged) ----------------- #
         y = x @ self._W                      # [T, 32] exact integer column sums
 
         ur = self.cfg.rows if useful_rows is None else useful_rows
@@ -197,7 +371,17 @@ class CIMArray:
         s.macs_issued += T * self.cfg.rows * self.cfg.cols
         s.macs_useful += T * ur * uc
         if y.size:
+            # Recorded from the exact analog sum, before any ADC digitization,
+            # since this is the number that sizes the ADC in the first place.
             s.max_abs_colsum = max(s.max_abs_colsum, int(np.abs(y).max()))
+
+        if self.cfg.adc_enabled:
+            # One ADC per column, applied to this single depth block's output,
+            # before matmul.py accumulates it across depth blocks.
+            y, n_sat = _adc_convert(y, self.cfg.adc_bits, self.adc_full_scale)
+            s.adc_conversions += T * self.cfg.cols
+            s.adc_saturations += n_sat
+
         return y
 
     # ---- housekeeping --------------------------------------------------- #
