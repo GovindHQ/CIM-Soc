@@ -1,356 +1,298 @@
-# control/ — simplified CIM control path (v0.2)
+# control/ — sequential CIM array controller
 
-A deliberately small, sequential first control architecture:
+The CPU generates a **command table**. One **array controller** (a single FSM)
+executes it in order, driving an explicit **DAC → array → ADC → accumulate**
+datapath on 32×32 tiles, reloading weights as it goes, until `DONE`.
 
-> **N tokens → one weight matrix (loaded once) → one 32×32 CIM array → N MVMs → N results → DONE**
-
-`cfg_num_tokens = 1` is the original one-token, one-MVM demonstration.
-
-Verilog-2005, no IP, no external libraries. Runs on Vivado XSim (verified),
-and is written to also run on Icarus Verilog and Verilator.
-
-The previous controller (`../cim_ctrl_rtl_v0.1/`) is left untouched and is used
-only as a reference (see §12).
-
----
-
-## 1. Architecture
+Verilog-2005, no IP. Verified in Vivado 2022.2 XSim (see §9). The analog blocks
+are behavioural models and are not meant to be synthesized.
 
 ```
-            CPU / Testbench
-   (writes token + weights, sets cfg_*, pulses START, waits DONE, reads result)
-                   |
-                   v
-          +------------------+   addresses + strobes only
-          | array_controller |---------------------------+
-          |    (one FSM)     |                           |
-          +--+------------+--+                           |
-             |            |                              |
-   tok_rd_addr|  w_rd_addr|                   res_we, res_wr_addr
-             v            v                              |
-     +-------------+ +---------------+                   |
-     | token_buffer| | weight_memory |                   |
-     | (act. RAM)  | |  (row words)  |                   |
-     +------+------+ +-------+-------+                   |
-            | token          | weight row                |
-            v                v                           |
-     +--------------------------------+                  |
-     | cim_array  x NUM_ARRAYS        |                  |
-     |  32x32, x register, weight regs|                  |
-     +---------------+----------------+                  |
-                     | y (32 column sums)                |
-                     v                                   v
-              +---------------------------------------------+
-              |               result_buffer                 |
-              +---------------------------------------------+
+                    CPU (cpu_mapper.py / tb_control.v)
+                     |
+                     | command table, tokens, weights
+                     v
+   command_table --> array_controller            addresses, enables, start pulses
+                     |     |     |     |
+       +-------------+     |     |     +----------------------------+
+       v                   v     v                                  v
+  token_buffer      weight_memory  dac_start, array_start,    result_buffer
+       |                   |       adc_start, group_mask      (accumulator +
+       |                   |             |                     result memory)
+       v                   v             v                          ^
+  +--------------------------------------------------+              |
+  | one channel per array (NUM_ARRAYS)               |              |
+  |   dac --v_ia--> cim_array --v_oa--> adc --codes-------------------+
+  +--------------------------------------------------+
 ```
 
 | file | what it is |
 |---|---|
-| `array_controller.v` | **the** controller: one FSM, config registers, address generation, latency counter |
-| `token_buffer.v` | activation memory; one word = one whole token (ROWS × ACT_BITS) |
-| `weight_memory.v` | weight memory; one word = one weight **row** (COLS × W_BITS) |
-| `cim_array.v` | behavioural 32×32 array: weight registers, input register, ideal MAC |
-| `result_buffer.v` | result memory; one word = one MVM output (COLS × ACC_W) |
-| `cim_top.v` | wires the above together; instantiates `NUM_ARRAYS` arrays |
-| `tb_control.v` | testbench: `NUM_TOKENS` tokens, one matrix, self-checking |
-| `run_xsim.bat` / `run_iverilog.sh` | one-command simulation |
+| `array_controller.v` | **the** controller: one FSM, simple counters, no data passes through it |
+| `command_defs.vh` | command format and opcodes |
+| `command_table.v` | the table the CPU writes |
+| `token_buffer.v` | input memory; one word = one depth-block slice of one token |
+| `weight_memory.v` | weights; one word = one row of one tile |
+| `dac.v` | behavioural input DAC bank of one array |
+| `cim_array.v` | behavioural 32×32 macro of one array |
+| `adc.v` | behavioural pre-ADC gain + SAR ADC bank of one array |
+| `result_buffer.v` | digital accumulator + result memory |
+| `cim_top.v` | wiring; `NUM_ARRAYS` channels from a generate loop |
+| `tb_control.v` | testbench, plays the CPU and checks everything |
+| `cpu_mapper.py` | the CPU's mapper (X, W → table + memory images) + golden reference |
+| `run_tests.py` | runs the test progression |
 
-**Key rule: data never goes through the controller.** The controller only
-produces addresses and strobes. Token, weight and result data flow straight
-between memories and the array. This is what keeps the FSM small.
+---
 
-## 2. The FSM
+## 1. The mapping (taken from `cim_sim/matmul.py`, not invented)
+
+`X[N,K] @ W[K,M]`, array 32×32, `n_db = ceil(K/32)`, `n_ob = ceil(M/32)`:
 
 ```
-          start
- IDLE ----------> LOAD_WEIGHT --(ROWS cycles)--> LOAD_TOKEN --> START_MVM
-  ^                                                  ^              |
-  |  start                       more tokens:        |              v
- DONE <--last token-- STORE_RESULT ---token_idx++----+         WAIT_MVM
-                           ^                                        |
-                           +-----------(MVM_LATENCY cycles)---------+
+for token_block:
+    for output_block ob:
+        for depth_block db:
+            load tile W[db, ob]                  (skipped if already resident)
+            stream the token block through it
+            acc[tokens, ob] += ADC codes
 ```
 
-| state | cycles | what the controller drives |
+**One array holds exactly one tile, and a tile is a (depth block, output block)
+pair.** So with one array every depth block needs its own weight load: reloads
+happen per depth block too, not only per output tile. TinyViT stage 3 qkv is 5
+depth × 15 output = **75 weight loads**, with one COMPUTE of 196 tokens after each.
+
+Token block `T` is purely a choice in the table: `T=N` above; `T=1` gives
+`token → output → depth`, with far more weight loads and bit-identical results
+(tested: `t4_8` vs `t4_8_T1`, 4 vs 32 weight loads). The RTL does not change.
+
+## 2. The command table
+
+One 120-bit word per command; fields at fixed positions (`command_defs.vh`).
+The controller knows nothing about attention, linear layers or convolution.
+
+| opcode | does | cycles |
 |---|---|---|
-| IDLE | — | waits for `start`; latches all `cfg_*` registers, `token_idx = 0` |
-| LOAD_WEIGHT | ROWS (32) | `w_rd_addr = weight_base + w_row`, `arr_w_we`, `arr_w_row = w_row` |
-| LOAD_TOKEN | 1 | `tok_rd_addr = token_base + token_idx`, `arr_x_load` |
-| START_MVM | 1 | `arr_mvm_start` (the "analog start") |
-| WAIT_MVM | MVM_LATENCY | counts `lat_cnt` |
-| STORE_RESULT | 1 | `res_we`, `res_wr_addr = result_base + token_idx`; then `token_idx + 1 >= num_tokens` → DONE, else `token_idx++` → LOAD_TOKEN |
-| DONE | until next `start` | `done = 1` (level). `start` here launches a new run |
+| `CMD_CONFIG` | set `gain` and `act_signed` for what follows (like `set_operation()`: once per operation, never per depth block) | 2 |
+| `CMD_CLEAR` | zero `count` consecutive result words (like `acc = np.zeros(...)`) | 2 + count |
+| `CMD_LOAD_WGT` | write one tile from `weight_addr` into `array_first` | 2 + ROWS |
+| `CMD_COMPUTE` | stream `count` tokens through the resident weights | 2 + count × (see §3) |
+| `CMD_END` | raise `done` | 2 |
 
-`busy` is high in every state except IDLE and DONE.
-
-Weights are loaded **before** the tokens on purpose: the array is
-weight-stationary, so the token loop goes back to `LOAD_TOKEN`, never to
-`LOAD_WEIGHT`. The matrix is written once per run, however many tokens follow.
-
-Total latency from `start` to `done`:
+`CMD_COMPUTE` addressing, token `t`, array `a` in the group:
 
 ```
-ROWS + NUM_TOKENS · (MVM_LATENCY + 3)   cycles
-         per token: LOAD_TOKEN 1 + START_MVM 1 + WAIT_MVM L + STORE_RESULT 1
+input word  = input_addr  + t*input_stride  + (in_step  ? a : 0)
+result word = output_addr + t*output_stride + (out_step ? a : 0)
 ```
 
-= 45 for 1 token, 84 for 4, 201 for 13 at the defaults. The testbench checks
-this number. `cfg_num_tokens = 0` behaves as 1.
-
-## 3. Token flow
+Stage-3 qkv table on one array (first entries):
 
 ```
-TB --tok_wr_*--> token_buffer[token_base + t] = token t     (before start)
-controller, for token_idx = 0 .. num_tokens-1:
-    tok_rd_addr = token_base + token_idx                     (LOAD_TOKEN)
-    token_buffer.rd_data --> cim_array.x_data, latched by arr_x_load
-    ... MVM ...
-    res_wr_addr = result_base + token_idx                    (STORE_RESULT)
+CONFIG  gain=24 act_signed=1
+CLEAR   output_addr=3 count=2940
+LOAD_WGT array=0 tile(db0,ob0)
+COMPUTE count=196 input_addr=.. input_stride=5 output_addr=3 output_stride=15
+LOAD_WGT array=0 tile(db1,ob0)
+COMPUTE count=196 input_addr=..+1 input_stride=5 output_addr=3 output_stride=15
+...
 ```
 
-One memory word holds a whole token (32 × 8 bit = 256 bit), so
-`TOKEN_SIZE = 1` word and loading a token is one cycle. Tokens must therefore be
-stored at **consecutive** addresses, and results come out at consecutive
-addresses in the same order. The buffers are 16 words deep (`TOK_DEPTH`,
-`RES_DEPTH` in `cim_top.v`); nothing checks that `base + num_tokens` fits.
+Stage 3 qkv + QK^T + AV together fit in **185 commands**, because one command
+covers a whole token range. A command per token would be about 17 000.
 
-## 4. Weight flow
+## 3. The FSM
 
 ```
-TB --w_wr_*--> weight_memory[weight_base + r] = row r of W   (before start)
-controller: for w_row = 0..ROWS-1:                            (LOAD_WEIGHT)
-    w_rd_addr = weight_base + w_row
-    cim_array.wrow[w_row] <= weight_memory[w_rd_addr]
+IDLE --start--> FETCH --> DECODE --+-- CONFIG -----------------------> FETCH
+                                   +-- LOAD_WEIGHT  (ROWS cycles) ---> FETCH
+                                   +-- CLEAR_OUTPUT (count cycles) --> FETCH
+                                   +-- END / illegal ----------------> DONE
+                                   +-- COMPUTE:
+
+   +-> LOAD_INPUT    one cycle per array in the group
+   |   DAC_START     pulse
+   |   WAIT_DAC      DAC_LATENCY cycles
+   |   ARRAY_START   pulse: input applied, column outputs start to settle
+   |   WAIT_ARRAY    ARRAY_LATENCY cycles
+   |   ADC_START     pulse: ADC samples
+   |   WAIT_ADC      ADC_LATENCY cycles
+   |   WAIT_ACCUM    ARRAY_ACCUM_WAIT cycles (skipped if 0)
+   |   ACCUMULATE    one cycle per array in the group
+   +-- more tokens                      last token --> FETCH
 ```
 
-One weight row per cycle, like a real macro written row by row (same idea as
-`MC_LOAD` in v0.1). Row `r` of the weight memory is row `r` of the array, i.e.
-the `K` (contraction) index; the column index inside the word is the output.
+Cycles per token, `g` arrays: `g + 1 + DAC + 1 + ARRAY + 1 + ADC + ACCUM_WAIT + g`
+= **20** at the defaults with `g = 1`. The testbench checks total cycles exactly.
 
-## 5. MVM execution
+### Every control signal
 
-`cim_array` computes, on `mvm_start`:
+| signal | high in | meaning |
+|---|---|---|
+| `cmd_rd_addr` | always | `pc` |
+| `weight_we`, `weight_row` | LOAD_WEIGHT | write row `row` of `active_array` |
+| `weight_rd_addr` | LOAD_WEIGHT | `weight_addr + row` |
+| `input_load` | LOAD_INPUT | latch input codes into `active_array`'s DAC |
+| `input_rd_addr` | LOAD_INPUT | §2 formula |
+| `dac_start` | DAC_START | start conversion on every array in `group_mask` |
+| `array_start` | ARRAY_START | apply the input on every array in `group_mask` |
+| `adc_start` | ADC_START | sample on every array in `group_mask` |
+| `result_clear` | CLEAR_OUTPUT | zero `result_addr` |
+| `result_accum` | ACCUMULATE | `result_addr += codes of active_array` |
+| `result_addr` | CLEAR / ACCUMULATE | §2 formula |
+| `active_array` | always | `array_first + arr_idx`: the array a shared memory port serves now |
+| `group_mask` | set in DECODE | arrays taking part in this COMPUTE |
+| `adc_gain`, `act_signed` | set by CONFIG | analog domain, held until the next CONFIG |
+| `busy`, `done`, `error` | | status. `error` = illegal opcode or array range; the run stops |
 
-```
-y[c] = Σ_{r=0..ROWS-1}  x[r] · W[r][c]          (signed, ACC_W-bit result)
-```
+Internal counters: `pc`, `token_idx`, `arr_idx`, `row`, `wait_cnt`. That is all of
+the address generation: a base plus an index times a stride. There is no AGU.
 
-i.e. `y = x · W` with `x[1×32]`, `W[32×32]` — the same orientation as
-`cim_matmul(X[N,K], W[K,M])` in the Python simulator. This is an **ideal
-behavioural MAC**: no DAC, no charge sharing, no ADC quantisation. The analog
-chain (`cim_sim/analog/`) is not modelled here; this RTL only proves the
-control sequence.
+## 4. DAC, array, ADC
 
-## 6. Fixed latency
+| block | model | relation to `cim_sim/analog/` |
+|---|---|---|
+| `dac.v` | `v_ia[r]` = input code, read signed or unsigned per `act_signed` | `dac.py`, signed analog-equivalent, in units of `v_per_unit` (R2R / CAPACITIVE family; topology unconfirmed) |
+| `cim_array.v` | `v_oa[c] = Σ_r v_ia[r]·W[r][c]` | `macro.py`, in units of `K_MAC`. `m` = ROWS always, including zero-padded rows |
+| `adc.v` | `d = floor((G·v_oa + 2^12) / 2^13)`, clipped to `[-128,127]`, clips counted | `adc.py`. `2^13 = LSB/K_MAC = m·2^B·2^DAC_BITS/2^ADC_BITS`, derived from configuration only |
+| `result_buffer.v` | `mem[addr] += d` per column | `acc += d` in `matmul.py` |
 
-The analog datapath is deterministic, so there is no ready/valid handshake:
+`array_start` is a control abstraction. The macro has no compute operation of its
+own; its outputs develop once the input is applied. The pulse gives the
+controller a clean sequencing point.
 
-```
-START_MVM: arr_mvm_start = 1, lat_cnt <= 0
-WAIT_MVM : lat_cnt <= lat_cnt + 1;  leave when lat_cnt == MVM_LATENCY-1
-```
+**The waits are enforced, not decorative.** Each analog block drives X on its
+output until its own latency has elapsed. A controller that waits one cycle too
+few propagates X into the results and the test fails (§9).
 
-`MVM_LATENCY` is a single parameter (default 10, must be ≥ 1), set in
-`cim_top.v` and overridable from the testbench / command line. It is a
-**placeholder**: no analog timing has been supplied. Nothing else in the RTL
-contains a delay.
+**Gain** is an integer per-operation configuration value, never derived from data.
+The verified set for this DAC family is ≈ {24, 8, 3}; non-integer gains would need
+a fixed-point field.
 
-To switch to a real completion signal later, add an input `arr_mvm_done` and
-replace the one exit condition in `WAIT_MVM` (`lat_cnt == MVM_LATENCY-1`) with
-`arr_mvm_done`. Nothing else changes.
+**Result = integer sum of ADC codes.** The single rescale to real units
+(`LSB_P·S_X·S_W`) is left to the CPU after `DONE`, and the two scales stay separate.
 
-## 7. Configuring NUM_ARRAYS
+**There is no STORE command.** With the whole token range in flight, the partial
+sums for every token must stay live until the last depth block, so they live in
+the result memory itself (`psum_words_live = T·32` in the simulator). The last
+ACCUMULATE leaves the final result in place; a separate store would be a copy.
 
-1. **Where:** `parameter NUM_ARRAYS = 1` in `cim_top.v` (also in `tb_control.v`,
-   which passes it down).
-2. **How it creates arrays:** `cim_top.v` has a `generate for (g = 0; g < NUM_ARRAYS; ...)`
-   loop that instantiates `cim_array` once per `g` (`g_arr[g].u_arr`). All
-   arrays see the same weight-row and token data buses.
-3. **How the controller selects one:** `cfg_array_id` is latched on `start`
-   and driven out as `arr_sel`. In `cim_top.v` each array's `w_we`, `x_load`
-   and `mvm_start` are ANDed with `(arr_sel == g)`, and the result is muxed from
-   `y_all[arr_sel]`. So exactly one array does the work. `cfg_array_id` must be
-   `< NUM_ARRAYS` (not checked in hardware).
-4. **What changes later** to spread work over arrays: see §10.
+## 5. Timing parameters
 
-The testbench uses `ARRAY_ID = NUM_ARRAYS-1`, so with `NUM_ARRAYS=2` it really
-exercises array 1 while array 0 stays idle.
+Set on `cim_top` (in tests: `Timing` in `cpu_mapper.py`). **All are placeholders.**
+`cim_sim/` holds no timing data at all.
 
-## 8. Running the simulation
+| parameter | default | note |
+|---|---|---|
+| `DAC_LATENCY` | 2 | placeholder |
+| `ARRAY_LATENCY` | 4 | placeholder |
+| `ADC_LATENCY` | 9 | placeholder; sized as 1 sample + 8 SAR decisions |
+| `ARRAY_ACCUM_WAIT` | 0 | extra wait before accumulating |
+| LOAD_WEIGHT | 1 row/cycle | assumption; the simulator does not model write time |
 
-From `control/`:
+To use a real completion signal later, replace the one exit condition of a
+`WAIT_*` state. Nothing else changes.
 
-Arguments are `[NUM_ARRAYS] [NUM_TOKENS]`, defaults 1 and 4:
+## 6. Multiple arrays
 
-```bat
-run_xsim.bat            :: Vivado XSim, 1 array, 4 tokens
-run_xsim.bat 1 1        :: one token: the original single-MVM demo
-run_xsim.bat 2 4        :: 2 arrays (testbench uses array 1), 4 tokens
-run_xsim.bat 1 13       :: 13 tokens (maximum for the testbench's buffer layout)
-```
+`NUM_ARRAYS` on `cim_top` builds that many DAC + array + ADC channels. A COMPUTE
+names a group (`array_first`, `array_count`). Inside a group the analog stages
+fire together, one `WAIT_*` for all; only the shared memory ports (LOAD_INPUT,
+ACCUMULATE, LOAD_WEIGHT) go one array at a time. The table picks the split, and
+**output tiles is the default mapping** (`Program.mode = "output"`), matching the
+simulator:
 
-Icarus Verilog (if installed):
+| | `in_step` | `out_step` | arrays hold | result |
+|---|---|---|---|---|
+| **output tiles** (default; what `matmul.py` does) | 0 | 1 | different output tiles of one depth block; one input goes to all | one word per array |
+| depth blocks (`mode="depth"`; still tested) | 1 | 0 | different depth blocks of one output tile | codes of all arrays add into one word |
+
+Both give bit-identical results to one array, since addition commutes. Stage 3 on
+4 arrays, same data and timing placeholders:
+
+| | timesteps | cycles |
+|---|---|---|
+| 1 array | 17 444 | 356 606 |
+| 4 arrays, depth blocks | 7 644 | 203 038 |
+| 4 arrays, output tiles | 5 684 | 161 858 |
+
+(The 4-array runs use `ARRAY_ACCUM_WAIT=3`, the 1-array run 0.) Output tiles win
+here because qkv has 15 output tiles but only 5 depth blocks. Weight loads remain
+sequential, and broadcast still loads each array's input register in its own cycle.
+
+## 7. Running
 
 ```bash
-./run_iverilog.sh 1 4
+python run_tests.py              # all tests, XSim on PATH
+python run_tests.py t1 t2        # only these
+python run_tests.py --list
+python run_tests.py --sim iverilog   # written, not run here: Icarus is not installed
 ```
 
-Verilator 5 (if installed):
+Each test's files and `sim.log` are in `build/<test>/`; `build/summary.csv` holds
+the numbers and configuration. `t1` and `t2` print the full FSM trace and every
+partial sum. To try other data, add an entry in `build_tests()` in `run_tests.py`.
 
-```bash
-verilator --binary --timing -Wno-fatal -GNUM_ARRAYS=1 -GNUM_TOKENS=4 --top-module tb_control *.v && ./obj_dir/Vtb_control
-```
+## 8. Tests
 
-The run prints the FSM trace, the full result of token 0, a one-line check
-per token, and ends with `RESULT: PASS` or `RESULT: FAIL`. Build products go
-to `control/build/` (log `sim_a<arrays>_t<tokens>.log`).
+| test | what it proves |
+|---|---|
+| `t1` | 1 token, 1 depth, 1 output block. Hand-checkable: `P[c] = 764c − 7747`, `d[c] = round(P[c]/1024)` = −8, −7, −6, −5 … |
+| `t2` | 3 depth blocks (ragged): col 0 goes 0 → 19 → 20 → 21 |
+| `t3`, `t3_slow` | 2 depth × 3 output blocks: 6 weight reloads; other latencies |
+| `t4_8`, `t4_8_T1`, `t4_8u` | 8 tokens; token block T=N vs T=1; unsigned inputs |
+| `t4_196` | TinyViT stage 3 shapes, 196 tokens, qkv + QK^T + AV in one table at gains 24/8/3 |
+| `t5a_*`, `t5b_*`, `t5c_*` | 2, 4, 8 arrays by depth block and by output tile, against the 1-array reference |
+| `t6_clip` | gain 255: clipping counted |
+| `t7_*` | illegal opcode / array out of range raise `error` and stop |
 
-**Verified (Vivado 2022.2 XSim):**
+Every test checks: all result words against the golden values, exact cycle count,
+weight writes, array ops, timesteps and clip count, and that nothing was written
+just outside the result range.
 
-| NUM_ARRAYS | NUM_TOKENS | start→done | result |
-|---|---|---|---|
-| 1 | 1 | 45 | PASS |
-| 1 | 4 | 84 | PASS |
-| 2 | 4 | 84 | PASS |
-| 1 | 13 | 201 | PASS |
-| 4 | 13 | 201 | PASS |
+## 9. Results
 
-Single-token runs also PASS at `MVM_LATENCY = 1, 3` (36 / 38 cycles).
-Two deliberately broken controllers FAIL as they should:
-- weight address ignoring `weight_base`: every column reads 528 (Σx over the decoy tile);
-- loop exit off by one (`token_idx >= num_tokens`): 97 instead of 84 cycles,
-  and a result is written past the end of the range.
+XSim 2022.2, seeded synthetic data. Latencies are placeholders.
 
-Icarus and Verilator are not installed on this machine, so those two flows are
-written but not yet run.
+**20/20 tests pass.** Multi-array results are identical to their 1-array references.
 
-Trace of the 4-token run (abridged):
+**Against the real simulator.** `run_tests.py` also runs `cim_matmul` through the
+actual analog chain (capacitive DAC, 8b/8b/8b) and recovers its integer code sums:
 
-```
----- START
-  cycle   83          IDLE ->  LOAD_WEIGHT  token_idx=0
-  cycle  115   LOAD_WEIGHT ->   LOAD_TOKEN  token_idx=0      <- weights loaded once
-  cycle  116    LOAD_TOKEN ->    START_MVM  token_idx=0
-  cycle  117     START_MVM ->     WAIT_MVM  token_idx=0
-  cycle  127      WAIT_MVM -> STORE_RESULT  token_idx=0
-  cycle  128  STORE_RESULT ->   LOAD_TOKEN  token_idx=1      <- next token, same weights
-  ...
-  cycle  167  STORE_RESULT ->         DONE  token_idx=3
----- DONE after 84 cycles (expected ROWS + NUM_TOKENS*(MVM_LATENCY+3) = 84)
-   token  0 @ result addr  2: 32/32 columns match  (y[0]=-30, y[31]=63)
-   token  1 @ result addr  3: 32/32 columns match  (y[0]=-38, y[31]=55)
-   token  2 @ result addr  4: 32/32 columns match  (y[0]=-46, y[31]=47)
-   token  3 @ result addr  5: 32/32 columns match  (y[0]=-54, y[31]=39)
-RESULT: PASS
-```
+- Weight writes, array ops and clip counts match its trace in every test; timesteps
+  too, except depth-block mode, which the simulator has no equivalent for.
+- **Stage 3: 100 of 138 768 result cells differ from `cim_sim`, each by 1 code.** All
+  100 are explained by exact rounding ties (463 tie conversions in the run; 0 cells
+  unexplained). The RTL always rounds an exact tie up; `cim_sim` computes the same
+  voltage in floating point with Vref = 0.6, so its ties fall either way. All
+  other tests have 0 differing cells.
 
-## 9. Changing the input / weights
+**End-to-end error**, code sums rescaled once and compared with float `X @ W`:
+qkv 1.6%, QK^T 2.0%, AV 13.6%. This is **random data, not TinyViT activations**,
+and the gains were calibrated on other data, so it says nothing about accuracy.
+It only shows that the rescale chain closes.
 
-Everything is in `tb_control.v`, in the two functions at the top:
+**Fault injection** (scratch copies of the RTL, one fault each): all 20 faults
+below make their test fail:
+DAC / array / ADC wait one cycle short (results go X), accumulate overwrites, no
+clear, weight reload reads first tile, wrong row, load stops after one row, token
+stride ignored on input / output, `in_step` / `out_step` ignored, second array never
+started, accumulate always takes array 0, unsigned read as signed, ADC truncates,
+gain ignored, clipping not counted, illegal opcode accepted, array range unchecked.
 
-```verilog
-function integer tok_val(input integer t, input integer r);  // x_t[r], token t
-function integer w_val  (input integer r, input integer c);  // W[r][c]
-```
+## 10. Assumptions and open points
 
-The testbench computes the expected result with its own plain loop from these
-same functions, so any change is checked automatically. Values must fit in
-`ACT_BITS` / `W_BITS` signed. The default test is chosen to be checkable by hand:
+| item | status |
+|---|---|
+| 32×32, one ADC per column, SAR 8b | hardware-confirmed |
+| capacitive DAC transfer | candidate, the simulator's default; topology unconfirmed |
+| signed weights and signed MAC | behavioural abstraction; physical realisation is an open question |
+| `m = ROWS` for padded tiles | simulator assumption, open question to the hardware team |
+| all latencies | placeholders |
+| memory reads combinational | simplification; a real SRAM adds a cycle per read |
+| ideal analog | no nonidealities modelled, unlike the hooks in `cim_sim/analog` |
+| `ACC_W = 32` | generous; 7 depth blocks × 8-bit codes need about 11 bits |
 
-```
-x_t[r]  = (r + 1) − 8t                   token 0: 1..32, token 1: −7..24, ...
-W[r][c] = +2 if r == c
-          -1 if r == 31 - c
-           0 otherwise
-y_t[c]  = 2·x_t[c] − x_t[31−c] = 3c − 30 − 8t
-          token 0: −30, −27, ..., 63      token 1: −38, ..., 55      ...
-```
-
-The diagonal catches row/column ordering, the anti-diagonal catches a reversed
-index, the −1 checks signed arithmetic, and the −8t shift makes every token's
-result different (so a repeated or skipped token fails). Later tokens also have
-negative activations. The testbench uses non-zero `token_base=1`,
-`weight_base=32`, `result_base=2`, puts **decoy** tokens just before and just
-after the token range, puts a decoy weight tile at 0, and checks that the
-result words just before and just after the result range were never written.
-
-## 10. How this extends
-
-### N tokens → N MVMs (implemented)
-
-Set `cfg_num_tokens = N` before `start`. The whole change in
-`array_controller.v` is one latched register and one branch in `STORE_RESULT`:
-
-```verilog
-if (token_idx + 1'b1 >= num_tokens)  state <= S_DONE;          // last token
-else begin token_idx <= token_idx + 1'b1;  state <= S_LOAD_TOKEN; end
-```
-
-Because one memory word is one token, `TOKEN_SIZE = 1` and
-`token_addr = token_base + token_idx`. If the activation memory becomes narrower
-(e.g. a 32-bit bus), `token_addr = token_base + token_idx * TOKEN_SIZE` and
-`LOAD_TOKEN` becomes a small beat loop exactly like `LOAD_WEIGHT`.
-Weights are loaded once and stay resident (weight-stationary), so one run
-behaves like `CIMConfig.token_block = N` in the Python simulator: one weight
-write per tile, N tokens streamed through it.
-
-Not done yet: overlapping token loads with the MVM wait (LOAD_TOKEN for token
-t+1 during WAIT_MVM of token t). That would save 1 cycle per token today and
-more once token fetch is multi-cycle; it is the first pipelining step.
-
-### Fetching weights for the next MVM
-
-`weight_base` is already a register. For a different matrix (or a different
-tile of a larger matrix), set `weight_base = tile_index * ROWS` and go through
-`LOAD_WEIGHT` again. A tiled MVM (K > 32 or M > 32) adds two counters
-(depth block, output block) around the same states; depth-block partial sums
-must then be **added** into the result buffer instead of overwritten
-(read-modify-write in `STORE_RESULT`), matching the digital accumulation in
-`cim_sim/matmul.py`.
-
-### Multiple arrays dividing the work
-
-Recommended split = **output-tile parallelism**, the scheme the Python
-simulator already uses (`cim_matmul(..., arrays=[...])`): each array holds a
-different 32-column output tile; one token is **broadcast** to all of them.
-
-What changes:
-1. `LOAD_WEIGHT` loops over arrays too (array `a` gets tile
-   `weight_base + a*ROWS`), using `arr_sel` as the loop counter.
-2. In `cim_top.v`, `x_load` and `mvm_start` are no longer gated by `arr_sel`
-   (broadcast); all arrays fire together, one `WAIT_MVM` for all.
-3. `STORE_RESULT` loops over arrays, writing `y_all[a]` to
-   `result_base + token_idx*NUM_ARRAYS + a`.
-
-The alternative (token parallelism: same weights in every array, different
-tokens) is also possible but costs NUM_ARRAYS × the weight writes.
-
-### Command table (deliberately not built yet)
-
-Today the FSM state order *is* the program. When more than one fixed sequence
-is needed, each work state becomes an opcode in a small table
-(`LOAD_WEIGHT`, `LOAD_TOKEN`, `MVM` = START+WAIT, `STORE_RESULT`, `END`), and
-IDLE is replaced by a "fetch next command" state that jumps to the state named
-by the opcode. The work states themselves stay unchanged, which is why they are
-kept as independent steps now.
-
-## 11. Assumptions (not hardware facts)
-
-| item | value | status |
-|---|---|---|
-| array | 32×32, one MVM per `mvm_start` | design point (CLAUDE.md §3) |
-| ACT_BITS / W_BITS | 8 / 8, signed | simulator assumption; unsigned AV activations not modelled |
-| ACC_W | 32 bit | ≥ 21 bits needed for 8b×8b×32 |
-| MVM_LATENCY | 10 cycles | **placeholder** |
-| memory reads | combinational (register-array memories) | simplification; a real SRAM adds 1 cycle per read |
-| ADC / analog | ideal, not modelled | — |
-
-## 12. Relation to `cim_ctrl_rtl_v0.1`
-
-Kept from v0.1: the `ROWS/COLS` naming, the idea that the macro is written one
-weight row at a time (`MC_LOAD`) and fired by one command (`MC_COMPUTE` ≈
-`arr_mvm_start`), and that all timing is a parameter. Deliberately left out:
-operation sequencer, engine controllers, the four configuration tables, the
-AGUs, accumulator credits, bit-planes, weight slots and the macro adapter.
-Those remain the reference for where this design is heading.
+**Next natural extensions** (not built): overlapping token loads with the analog
+wait, parallel weight loads, per-array commands so arrays run independently, and
+the DAC-to-input bit-plane question once DAC width differs from input width.
