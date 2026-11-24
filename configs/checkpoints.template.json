@@ -1,0 +1,21 @@
+{
+  "_comment": "Copy this file to configs/checkpoints.json and edit the paths. Relative paths are relative to the repository root. If expected_sha256 is set, a file with a different hash is REFUSED (never silently substituted). Set expected_sha256 to null to accept a different file; its actual hash is still recorded in every result row.",
+  "pretrained": {
+    "path": "tinyvit5m.pth",
+    "expected_sha256": "e4894bab91be2d8f1b5e9a2147b57f35ae84be46e195d6586308864fb06fad3d",
+    "trained_weight_bits": null,
+    "description": "Original TinyViT-5M-224, 22k->1k distilled (microsoft/Cream release tiny_vit_5m_22kto1k_distill.pth). Downloaded automatically with --download-pretrained if missing."
+  },
+  "qat_int4": {
+    "path": "checkpoints/best_model_int4_qat.pth",
+    "expected_sha256": "a903663b2a8e2c7d6bd8c1fb80d6a974495191678b981f3043bd5dfab6a22b56",
+    "trained_weight_bits": 4,
+    "description": "QAT-INT4 TinyViT-5M (FP32 latent weights, no quantizer state stored)."
+  },
+  "qat_int8": {
+    "path": "checkpoints/best_model_int8_qat.pth",
+    "expected_sha256": "9f8060d4a7464ea9c0873ec3140eacb86cbc090214dfd77628db9eec556dfa70",
+    "trained_weight_bits": 8,
+    "description": "QAT-INT8 TinyViT-5M (FP32 latent weights, no quantizer state stored)."
+  }
+}

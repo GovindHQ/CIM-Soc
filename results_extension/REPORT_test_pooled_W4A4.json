@@ -1,0 +1,732 @@
+{
+ "caveat": "All three ImageNetV2 variants pooled, each distinct image counted once (EXTENSION requested after the results were frozen (29 Oct 2026): descriptive only. The pre-declared primary TEST result is ImageNetV2 matched-frequency (10,000 images).) The variants differ in difficulty; compare models WITHIN this table.",
+ "comparisons": [
+  {
+   "a": "pretrained__fp32",
+   "b": "pretrained__adcoff_W4A4",
+   "id": "C1",
+   "isolates": "operand quantization (exact integer MAC, no ADC)",
+   "kl_ref_diff": {
+    "ci95": [
+     0.15471185705506407,
+     0.1606915287781374
+    ],
+    "mean": 0.15764123893783494,
+    "n": 20683,
+    "se": 0.0015380552468774711
+   },
+   "mcnemar": {
+    "a_only": 1018,
+    "b_only": 435,
+    "p": 4.427206297156901e-54
+   },
+   "nll_diff": {
+    "ci95": [
+     0.21852878954985902,
+     0.23307105270429437
+    ],
+    "mean": 0.22572517421101726,
+    "n": 20683,
+    "se": 0.00386375173708627
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -3.166972876275202,
+     -2.4706280520234007
+    ],
+    "mean": -2.818740028042354,
+    "n": 20683,
+    "se": 0.18325670416560785
+   }
+  },
+  {
+   "a": "pretrained__adcoff_W4A4",
+   "b": "pretrained__analog_W4A4__unity",
+   "id": "C2",
+   "isolates": "ADC + analog chain at unity gain",
+   "kl_ref_diff": {
+    "ci95": [
+     0.3496419499657383,
+     0.3636985910981975
+    ],
+    "mean": 0.3568976619614303,
+    "n": 20683,
+    "se": 0.0034656159681049205
+   },
+   "mcnemar": {
+    "a_only": 1955,
+    "b_only": 654,
+    "p": 2.224012519699579e-149
+   },
+   "nll_diff": {
+    "ci95": [
+     0.3981520010819779,
+     0.42146743428137434
+    ],
+    "mean": 0.4096406192898764,
+    "n": 20683,
+    "se": 0.006059242400339304
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -6.78334864381376,
+     -5.8260407097616405
+    ],
+    "mean": -6.290190011120243,
+    "n": 20683,
+    "se": 0.24306013469966795
+   }
+  },
+  {
+   "a": "pretrained__adcoff_W4A4",
+   "b": "pretrained__analog_W4A4__cal",
+   "id": "C3",
+   "isolates": "ADC + analog chain at calibrated gains",
+   "kl_ref_diff": {
+    "ci95": [
+     0.002443669108598921,
+     0.005237289338163924
+    ],
+    "mean": 0.00381375604671094,
+    "n": 20683,
+    "se": 0.0006962932378101846
+   },
+   "mcnemar": {
+    "a_only": 411,
+    "b_only": 385,
+    "p": 0.37557365645568375
+   },
+   "nll_diff": {
+    "ci95": [
+     0.0006986032082591071,
+     0.007933996326138469
+    ],
+    "mean": 0.004330392298449116,
+    "n": 20683,
+    "se": 0.001925199303839732
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -0.3820770681235797,
+     0.14504665667456365
+    ],
+    "mean": -0.1257071024512885,
+    "n": 20683,
+    "se": 0.1364094898465632
+   }
+  },
+  {
+   "a": "pretrained__analog_W4A4__unity",
+   "b": "pretrained__analog_W4A4__cal",
+   "id": "C4",
+   "isolates": "gain calibration (unity -> calibrated)",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.3596137795342381,
+     -0.34606109595624823
+    ],
+    "mean": -0.3530839059147194,
+    "n": 20683,
+    "se": 0.0034708085227744
+   },
+   "mcnemar": {
+    "a_only": 673,
+    "b_only": 1948,
+    "p": 1.4623767111560957e-142
+   },
+   "nll_diff": {
+    "ci95": [
+     -0.4171062878871533,
+     -0.3933884936129134
+    ],
+    "mean": -0.4053102269914273,
+    "n": 20683,
+    "se": 0.006057001526973416
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     5.661533626649906,
+     6.638422859353091
+    ],
+    "mean": 6.164482908668955,
+    "n": 20683,
+    "se": 0.24379183140876504
+   }
+  },
+  {
+   "a": "pretrained__analog_W4A4__cal",
+   "b": "old_int4__analog_W4A4__cal",
+   "id": "C5",
+   "isolates": "old QAT vs PTQ (same hardware, same gains)",
+   "kl_ref_diff": {
+    "ci95": [
+     0.3060880421784832,
+     0.31569891554139246
+    ],
+    "mean": 0.3109931306268469,
+    "n": 20683,
+    "se": 0.0024892871489313423
+   },
+   "mcnemar": {
+    "a_only": 973,
+    "b_only": 1082,
+    "p": 0.017178282670105096
+   },
+   "nll_diff": {
+    "ci95": [
+     -0.23185764327030675,
+     -0.20837997310137868
+    ],
+    "mean": -0.2203113401592769,
+    "n": 20683,
+    "se": 0.006064760020609635
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     0.11120243678383213,
+     0.9718125997195765
+    ],
+    "mean": 0.527002852584248,
+    "n": 20683,
+    "se": 0.2191503520677904
+   }
+  },
+  {
+   "a": "old_int4__legacyadc_W4A4",
+   "b": "old_int4__analog_W4A4__cal",
+   "id": "C8",
+   "isolates": "old QAT checkpoint: its training point (legacy ADC) -> new hardware",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.02363581157048219,
+     -0.01772440244568902
+    ],
+    "mean": -0.02066636661562872,
+    "n": 20683,
+    "se": 0.0014844510034355063
+   },
+   "mcnemar": {
+    "a_only": 694,
+    "b_only": 617,
+    "p": 0.035776904102506626
+   },
+   "nll_diff": {
+    "ci95": [
+     0.009536379517957903,
+     0.024808695445222816
+    ],
+    "mean": 0.01734376474196659,
+    "n": 20683,
+    "se": 0.003910004862061298
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -0.7010588405937243,
+     -0.043393124788474284
+    ],
+    "mean": -0.3722864187980467,
+    "n": 20683,
+    "se": 0.17504545011772019
+   }
+  },
+  {
+   "a": "pretrained__analog_W4A4__cal",
+   "b": "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal",
+   "id": "C6",
+   "isolates": "new QAT (VAL-selected) vs PTQ",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.13764934892992875,
+     -0.13183196762091176
+    ],
+    "mean": -0.1348080307590106,
+    "n": 20683,
+    "se": 0.001459865016712838
+   },
+   "mcnemar": {
+    "a_only": 511,
+    "b_only": 997,
+    "p": 2.096751960107786e-36
+   },
+   "nll_diff": {
+    "ci95": [
+     -0.21930510935559216,
+     -0.20460795617927244
+    ],
+    "mean": -0.2119648432254444,
+    "n": 20683,
+    "se": 0.003967342645688404
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     2.011313639220616,
+     2.73183290625151
+    ],
+    "mean": 2.349755838127931,
+    "n": 20683,
+    "se": 0.18704537014358447
+   }
+  },
+  {
+   "a": "old_int4__analog_W4A4__cal",
+   "b": "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal",
+   "id": "C7",
+   "isolates": "new QAT vs old QAT (same hardware, same gains)",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.4502668578648186,
+     -0.4411929359517526
+    ],
+    "mean": -0.4458011613858575,
+    "n": 20683,
+    "se": 0.0022514826603085795
+   },
+   "mcnemar": {
+    "a_only": 615,
+    "b_only": 992,
+    "p": 4.397796776245237e-21
+   },
+   "nll_diff": {
+    "ci95": [
+     -0.0012370134740947844,
+     0.01795422346617218
+    ],
+    "mean": 0.008346496933832508,
+    "n": 20683,
+    "se": 0.004890837581902505
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     1.4358410288642847,
+     2.19503940434173
+    ],
+    "mean": 1.8227529855436833,
+    "n": 20683,
+    "se": 0.19340796685669492
+   }
+  },
+  {
+   "a": "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal",
+   "b": "w4a4_kd_pilot10ep_full_final__analog_W4A4__cal",
+   "id": "C7b",
+   "isolates": "new QAT: last vs VAL-selected checkpoint",
+   "kl_ref_diff": {
+    "ci95": [
+     0.0,
+     0.0
+    ],
+    "mean": 0.0,
+    "n": 20683,
+    "se": 0.0
+   },
+   "mcnemar": {
+    "a_only": 0,
+    "b_only": 0,
+    "p": 1.0
+   },
+   "nll_diff": {
+    "ci95": [
+     0.0,
+     0.0
+    ],
+    "mean": 0.0,
+    "n": 20683,
+    "se": 0.0
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     0.0,
+     0.0
+    ],
+    "mean": 0.0,
+    "n": 20683,
+    "se": 0.0
+   }
+  },
+  {
+   "a": "w4a4_kd_pilot10ep_best__analog_W4A4__cal",
+   "b": "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal",
+   "id": "C10",
+   "isolates": "decision D2: fork vs early-stopped pilot, both VAL-selected",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.00699804374477495,
+     -0.005831602551009333
+    ],
+    "mean": -0.006408958197710612,
+    "n": 20683,
+    "se": 0.0002978493761441393
+   },
+   "mcnemar": {
+    "a_only": 404,
+    "b_only": 435,
+    "p": 0.30033169516431296
+   },
+   "nll_diff": {
+    "ci95": [
+     -0.008871791880617985,
+     -0.0011725417156487874
+    ],
+    "mean": -0.00508925079659097,
+    "n": 20683,
+    "se": 0.001978518227650566
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -0.14033264033264034,
+     0.4352608422375858
+    ],
+    "mean": 0.14988154523038244,
+    "n": 20683,
+    "se": 0.1400444562698619
+   }
+  }
+ ],
+ "composition": [
+  {
+   "contributes": 10000,
+   "duplicates_dropped": 0,
+   "manifest_sha256": "28d391c95b4acb5b49fc43ca9d936b8d9451295107957a1a36d6649636c234d2",
+   "n_images": 10000,
+   "split": "test"
+  },
+  {
+   "contributes": 6814,
+   "duplicates_dropped": 3186,
+   "manifest_sha256": "baf8d5d4feab0a63c914b955f29443b1165fd4bf44371749776da5a7562a0f4f",
+   "n_images": 10000,
+   "split": "test_th07"
+  },
+  {
+   "contributes": 3869,
+   "duplicates_dropped": 6131,
+   "manifest_sha256": "da14691bdf4a3f6b52b333cc533d0886e6c6fc83471f88bed450cc02d09d8a11",
+   "n_images": 10000,
+   "split": "test_top"
+  }
+ ],
+ "duplicate_label_conflicts": 0,
+ "duplicate_logit_mismatches": {
+  "old_int4__analog_W4A4__cal": 0,
+  "old_int4__legacyadc_W4A4": 0,
+  "pretrained__adcoff_W4A4": 0,
+  "pretrained__analog_W4A4__cal": 0,
+  "pretrained__analog_W4A4__unity": 0,
+  "pretrained__fp32": 0,
+  "w4a4_kd_pilot10ep_best__analog_W4A4__cal": 0,
+  "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal": 0,
+  "w4a4_kd_pilot10ep_full_final__analog_W4A4__cal": 0
+ },
+ "duplicate_rule": "each distinct file content (SHA-256) once; first occurrence in the order test, test_th07, test_top",
+ "duplicates": 9317,
+ "n": 20683,
+ "per_variant_top1": {
+  "test": {
+   "old_int4__analog_W4A4__cal": 67.38,
+   "old_int4__legacyadc_W4A4": 67.57,
+   "pretrained__adcoff_W4A4": 66.95,
+   "pretrained__analog_W4A4__cal": 66.7,
+   "pretrained__analog_W4A4__unity": 60.38,
+   "pretrained__fp32": 69.69,
+   "w4a4_kd_pilot10ep_best__analog_W4A4__cal": 68.99,
+   "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal": 69.26,
+   "w4a4_kd_pilot10ep_full_final__analog_W4A4__cal": 69.26
+  },
+  "test_th07": {
+   "old_int4__analog_W4A4__cal": 75.5,
+   "old_int4__legacyadc_W4A4": 76.07000000000001,
+   "pretrained__adcoff_W4A4": 75.19,
+   "pretrained__analog_W4A4__cal": 75.55,
+   "pretrained__analog_W4A4__unity": 68.46,
+   "pretrained__fp32": 78.4,
+   "w4a4_kd_pilot10ep_best__analog_W4A4__cal": 77.42999999999999,
+   "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal": 77.56,
+   "w4a4_kd_pilot10ep_full_final__analog_W4A4__cal": 77.56
+  },
+  "test_top": {
+   "old_int4__analog_W4A4__cal": 80.42,
+   "old_int4__legacyadc_W4A4": 80.83,
+   "pretrained__adcoff_W4A4": 79.97999999999999,
+   "pretrained__analog_W4A4__cal": 80.06,
+   "pretrained__analog_W4A4__unity": 74.4,
+   "pretrained__fp32": 82.58,
+   "w4a4_kd_pilot10ep_best__analog_W4A4__cal": 81.96,
+   "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal": 82.05,
+   "w4a4_kd_pilot10ep_full_final__analog_W4A4__cal": 82.05
+  }
+ },
+ "pooled_content_digest": "602178acf48a780507b6adfd419ead9844e040cc6c47855f76b6ffbd34cd66fe",
+ "post_hoc": [
+  {
+   "a": "pretrained__fp32",
+   "b": "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal",
+   "id": "P1",
+   "isolates": "POST HOC: new QAT (VAL-selected) on the CIM simulator vs the FP32 pretrained model",
+   "per_variant": {
+    "test": {
+     "kl_ref_diff": {
+      "ci95": [
+       0.0305646408973415,
+       0.032275212255026844
+      ],
+      "mean": 0.031424111227443326,
+      "n": 10000,
+      "se": 0.0004487451057005301
+     },
+     "mcnemar": {
+      "a_only": 188,
+      "b_only": 145,
+      "p": 0.0212184999042069
+     },
+     "nll_diff": {
+      "ci95": [
+       0.015440431282437363,
+       0.02569410214400583
+      ],
+      "mean": 0.020704967988550205,
+      "n": 10000,
+      "se": 0.002594972120533057
+     },
+     "top1_diff_pct": {
+      "ci95": [
+       -0.77,
+       -0.06975000000000137
+      ],
+      "mean": -0.43,
+      "n": 10000,
+      "se": 0.1824413288809539
+     }
+    },
+    "test_th07": {
+     "kl_ref_diff": {
+      "ci95": [
+       0.024350411935729534,
+       0.0259252889599152
+      ],
+      "mean": 0.025136779521042735,
+      "n": 10000,
+      "se": 0.00039177235310286577
+     },
+     "mcnemar": {
+      "a_only": 205,
+      "b_only": 121,
+      "p": 3.8157352557455485e-06
+     },
+     "nll_diff": {
+      "ci95": [
+       0.013742333853797565,
+       0.02207409410454954
+      ],
+      "mean": 0.01798498435000541,
+      "n": 10000,
+      "se": 0.002183740671615645
+     },
+     "top1_diff_pct": {
+      "ci95": [
+       -1.18,
+       -0.47000000000000003
+      ],
+      "mean": -0.84,
+      "n": 10000,
+      "se": 0.18036821579570758
+     }
+    },
+    "test_top": {
+     "kl_ref_diff": {
+      "ci95": [
+       0.019621592287431464,
+       0.020916809464338125
+      ],
+      "mean": 0.02026197682780021,
+      "n": 10000,
+      "se": 0.00033361515193517174
+     },
+     "mcnemar": {
+      "a_only": 158,
+      "b_only": 105,
+      "p": 0.0012998119551125087
+     },
+     "nll_diff": {
+      "ci95": [
+       0.01042428390938992,
+       0.01755637470853928
+      ],
+      "mean": 0.014233697681313719,
+      "n": 10000,
+      "se": 0.0018556064846830319
+     },
+     "top1_diff_pct": {
+      "ci95": [
+       -0.84,
+       -0.22
+      ],
+      "mean": -0.53,
+      "n": 10000,
+      "se": 0.16209422399871434
+     }
+    }
+   },
+   "pooled": {
+    "kl_ref_diff": {
+     "ci95": [
+      0.026097675121230148,
+      0.027197633723710143
+     ],
+     "mean": 0.026646964225535256,
+     "n": 20683,
+     "se": 0.0002823970707488563
+    },
+    "mcnemar": {
+     "a_only": 387,
+     "b_only": 264,
+     "p": 1.6258404046842925e-06
+    },
+    "nll_diff": {
+     "ci95": [
+      0.01492711554194277,
+      0.021239506803630015
+     ],
+     "mean": 0.018090723284022003,
+     "n": 20683,
+     "se": 0.001608661595952598
+    },
+    "top1_diff_pct": {
+     "ci95": [
+      -0.846105497268288,
+      -0.3384421989073152
+     ],
+     "mean": -0.5946912923657109,
+     "n": 20683,
+     "se": 0.12329439541891932
+    }
+   }
+  }
+ ],
+ "precision": "W4A4",
+ "rows": [
+  {
+   "agree_ref_pct": 86.85393801672872,
+   "ece_pct": 5.153766154620998,
+   "kl_ref": 0.4724481256113927,
+   "mean_logit_l2": 57.241519865320335,
+   "n": 20683,
+   "nll": 1.080096213464087,
+   "rel_logit_rms_pct": 89.85813247173657,
+   "run": "old_int4__analog_W4A4__cal",
+   "top1_pct": 73.07450563264517,
+   "top1_se_pct": 0.3084309985849703,
+   "top5_pct": 91.6114683556544
+  },
+  {
+   "agree_ref_pct": 86.67504714016341,
+   "ece_pct": 4.942252106281571,
+   "kl_ref": 0.4931144922270214,
+   "mean_logit_l2": 57.55409637302356,
+   "n": 20683,
+   "nll": 1.0627524487221205,
+   "rel_logit_rms_pct": 90.9307448888405,
+   "run": "old_int4__legacyadc_W4A4",
+   "top1_pct": 73.44679205144321,
+   "top1_se_pct": 0.307070536818251,
+   "top5_pct": 91.7420103466615
+  },
+  {
+   "agree_ref_pct": 87.61301551999226,
+   "ece_pct": 12.570529003724756,
+   "kl_ref": 0.15764123893783494,
+   "mean_logit_l2": 37.34544758864634,
+   "n": 20683,
+   "nll": 1.2960771613249147,
+   "rel_logit_rms_pct": 44.93825075680591,
+   "run": "pretrained__adcoff_W4A4",
+   "top1_pct": 72.67320988251221,
+   "top1_se_pct": 0.30986656373223936,
+   "top5_pct": 90.72184886138375
+  },
+  {
+   "agree_ref_pct": 87.35193153797805,
+   "ece_pct": 12.76914249876465,
+   "kl_ref": 0.16145499498454588,
+   "mean_logit_l2": 37.287522553112126,
+   "n": 20683,
+   "nll": 1.300407553623364,
+   "rel_logit_rms_pct": 45.17195772696859,
+   "run": "pretrained__analog_W4A4__cal",
+   "top1_pct": 72.54750278006092,
+   "top1_se_pct": 0.3103097318651732,
+   "top5_pct": 90.69767441860465
+  },
+  {
+   "agree_ref_pct": 76.00444809747135,
+   "ece_pct": 17.138101923080594,
+   "kl_ref": 0.5145389008992651,
+   "mean_logit_l2": 39.45685882471333,
+   "n": 20683,
+   "nll": 1.7057177806147914,
+   "rel_logit_rms_pct": 75.25796316111128,
+   "run": "pretrained__analog_W4A4__unity",
+   "top1_pct": 66.38301987139197,
+   "top1_se_pct": 0.32847406521859357,
+   "top5_pct": 86.37528404970266
+  },
+  {
+   "agree_ref_pct": 100.0,
+   "ece_pct": 8.41376754860109,
+   "kl_ref": 0.0,
+   "mean_logit_l2": 36.034894820189805,
+   "n": 20683,
+   "nll": 1.0703519871138973,
+   "rel_logit_rms_pct": 0.0,
+   "run": "pretrained__fp32",
+   "top1_pct": 75.49194991055455,
+   "top1_se_pct": 0.29908727452631556,
+   "top5_pct": 92.79118116327419
+  },
+  {
+   "agree_ref_pct": 93.55992844364937,
+   "ece_pct": 8.284204492837771,
+   "kl_ref": 0.03305592242324586,
+   "mean_logit_l2": 36.27896958865818,
+   "n": 20683,
+   "nll": 1.0935319611945105,
+   "rel_logit_rms_pct": 22.347518651497847,
+   "run": "w4a4_kd_pilot10ep_best__analog_W4A4__cal",
+   "top1_pct": 74.74737707295847,
+   "top1_se_pct": 0.30209564168533193,
+   "top5_pct": 92.59295073248562
+  },
+  {
+   "agree_ref_pct": 94.20296862157326,
+   "ece_pct": 8.347985694380466,
+   "kl_ref": 0.026646964225535256,
+   "mean_logit_l2": 36.2053118567708,
+   "n": 20683,
+   "nll": 1.0884427103979195,
+   "rel_logit_rms_pct": 20.274075665037373,
+   "run": "w4a4_kd_pilot10ep_full_best__analog_W4A4__cal",
+   "top1_pct": 74.89725861818886,
+   "top1_se_pct": 0.3014996212707558,
+   "top5_pct": 92.4092249673645
+  },
+  {
+   "agree_ref_pct": 94.20296862157326,
+   "ece_pct": 8.347985694380466,
+   "kl_ref": 0.026646964225535256,
+   "mean_logit_l2": 36.2053118567708,
+   "n": 20683,
+   "nll": 1.0884427103979195,
+   "rel_logit_rms_pct": 20.274075665037373,
+   "run": "w4a4_kd_pilot10ep_full_final__analog_W4A4__cal",
+   "top1_pct": 74.89725861818886,
+   "top1_se_pct": 0.3014996212707558,
+   "top5_pct": 92.4092249673645
+  }
+ ],
+ "rows_left_out": {
+  "test": [],
+  "test_th07": [],
+  "test_top": []
+ },
+ "split": "test_pooled",
+ "time_utc": "2026-10-30T17:18:03+00:00"
+}

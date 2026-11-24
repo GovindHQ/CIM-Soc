@@ -73,6 +73,14 @@ class PreADCGain:
         self.non = nonidealities or GainNonidealities()
         self.amp_saturated = 0
 
+    @property
+    def saturation_modeled(self) -> bool:
+        """True only if an output swing limit is configured. With the default
+        (v_swing_limit=None) the amplifier is ideal and CANNOT saturate, so
+        amp_saturated stays 0 by construction - report it as 'not modelled',
+        never as 'no saturation', and never substitute ADC clipping for it."""
+        return self.non.v_swing_limit is not None
+
     def apply(self, v_oa: np.ndarray) -> np.ndarray:
         g = self.gain * (1.0 + self.non.gain_error)
         v = np.asarray(v_oa, dtype=np.float64) * g + self.non.offset_v
@@ -158,7 +166,24 @@ class SARADC:
     restructuring anything.
 
     `convert()` takes SIGNED V_ADC_IN and returns SIGNED codes d.
+
+    Exact ties (an input exactly on a decision threshold, (k + 1/2) LSB) are
+    resolved UPWARD, i.e. the ideal transfer is d = floor(V/LSB + 1/2), clipped
+    to [-2^(N-1), 2^(N-1)-1]. See TIE_GUARD_REL.
     """
+
+    # Exact-tie guard, as a fraction of V_REF. In the ideal chain V_ADC_IN =
+    # G*K_MAC*P with P an integer, so whenever G*K_MAC/LSB is a simple ratio
+    # (G = 1, any power-of-two gain, ...) a large share of conversions sits
+    # EXACTLY on a decision threshold. Without a guard, ~1e-16 V of float
+    # rounding noise decided those ties in either direction, and that noise
+    # depends on the BLAS summation order, i.e. on the token-block / batch
+    # shape - which broke token-block neutrality (CLAUDE.md §11.3) on the
+    # analog path. 1e-9 * V_REF (0.6 nV at 0.6 V; < 1e-4 LSB even at 16 bits)
+    # only absorbs that noise so the `decide >= 0` rule applies
+    # deterministically. It is NOT a physical comparator offset and changes no
+    # conversion farther than 1e-9 * V_REF from a threshold.
+    TIE_GUARD_REL = 1e-9
 
     def __init__(self, bits: int = 8, vref: float = 0.6,
                  nonidealities: ADCNonidealities | None = None,
@@ -174,6 +199,13 @@ class SARADC:
         self.n_clipped_hi = 0
         self.n_clipped_lo = 0
         self.n_converted = 0
+        # Conversions that landed on the top / bottom code. A superset of the
+        # clipped ones: it also contains in-range inputs whose correct rounding
+        # IS the rail code, and inputs in (Vref - LSB/2, Vref] that saturate at
+        # the top code without being "clipped" (the top code only represents
+        # Vref*(2^N-1)/2^N). An upper bound on saturation, not a clip count.
+        self.n_rail_hi = 0
+        self.n_rail_lo = 0
 
     # -- physical LSB ------------------------------------------------------ #
 
@@ -219,7 +251,9 @@ class SARADC:
 
         # half-LSB offset so the ideal search rounds to nearest rather than
         # truncating; this is the standard sampling offset, not a fudge.
-        v_s = v_phys + 0.5 * self.lsb_volts
+        # The tie guard makes exact ties resolve upward deterministically
+        # instead of by float noise (see TIE_GUARD_REL).
+        v_s = v_phys + 0.5 * self.lsb_volts + self.TIE_GUARD_REL * self.vref
 
         # 3. successive approximation, MSB -> LSB
         code = np.zeros(v.shape, dtype=np.int64)
@@ -237,6 +271,8 @@ class SARADC:
             acc = np.where(keep, trial, acc)
 
         code = np.clip(code, 0, self.n_levels - 1)
+        self.n_rail_hi += int(np.count_nonzero(code == self.n_levels - 1))
+        self.n_rail_lo += int(np.count_nonzero(code == 0))
         # 4. signed re-centring
         return code - self.code_mid
 

@@ -1,0 +1,7 @@
+# Python 3.10 - 3.12. Install torch first (CPU wheel is sufficient):
+#   python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+torch>=2.1
+numpy>=1.24
+pillow>=9.5
+# optional: only the legacy synthetic-input plots in experiments.py
+matplotlib>=3.7

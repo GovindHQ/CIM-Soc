@@ -1,0 +1,7 @@
+# Versions observed in the remote conda env `cim_soc_qat` (22 Oct 2026) and in the
+# old QAT logs. The QAT code needs nothing beyond the simulator's requirements.
+# python 3.11.16
+torch==2.14.1        # +cu130 build on the GPU machine
+torchvision==0.29.1
+numpy==2.4.6
+pillow==12.3.0

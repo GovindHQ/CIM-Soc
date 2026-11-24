@@ -1,0 +1,732 @@
+{
+ "caveat": "All three ImageNetV2 variants pooled, each distinct image counted once (EXTENSION requested after the results were frozen (29 Oct 2026): descriptive only. The pre-declared primary TEST result is ImageNetV2 matched-frequency (10,000 images).) The variants differ in difficulty; compare models WITHIN this table.",
+ "comparisons": [
+  {
+   "a": "pretrained__fp32",
+   "b": "pretrained__adcoff_W8A8",
+   "id": "C1",
+   "isolates": "operand quantization (exact integer MAC, no ADC)",
+   "kl_ref_diff": {
+    "ci95": [
+     0.0004729043741744355,
+     0.0004926933502769317
+    ],
+    "mean": 0.0004825050077251235,
+    "n": 20683,
+    "se": 5.103906240290244e-06
+   },
+   "mcnemar": {
+    "a_only": 43,
+    "b_only": 43,
+    "p": 1.0
+   },
+   "nll_diff": {
+    "ci95": [
+     -2.5878343513982432e-05,
+     0.0008218225536572377
+    ],
+    "mean": 0.0003951797624302408,
+    "n": 20683,
+    "se": 0.0002102662123829223
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -0.0870279940047382,
+     0.0870279940047382
+    ],
+    "mean": 0.0,
+    "n": 20683,
+    "se": 0.04483799588156946
+   }
+  },
+  {
+   "a": "pretrained__adcoff_W8A8",
+   "b": "pretrained__analog_W8A8__unity",
+   "id": "C2",
+   "isolates": "ADC + analog chain at unity gain",
+   "kl_ref_diff": {
+    "ci95": [
+     0.199940843461369,
+     0.2075092620738359
+    ],
+    "mean": 0.20370862415392468,
+    "n": 20683,
+    "se": 0.001965928191752365
+   },
+   "mcnemar": {
+    "a_only": 1312,
+    "b_only": 480,
+    "p": 4.336296454726154e-89
+   },
+   "nll_diff": {
+    "ci95": [
+     0.25545436639853647,
+     0.2737618632510605
+    ],
+    "mean": 0.2645542229396154,
+    "n": 20683,
+    "se": 0.0045965881920772755
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -4.4094183629067345,
+     -3.6213315283082728
+    ],
+    "mean": -4.022627278441232,
+    "n": 20683,
+    "se": 0.20275523347321242
+   }
+  },
+  {
+   "a": "pretrained__adcoff_W8A8",
+   "b": "pretrained__analog_W8A8__cal",
+   "id": "C3",
+   "isolates": "ADC + analog chain at calibrated gains",
+   "kl_ref_diff": {
+    "ci95": [
+     0.0023153770081376884,
+     0.0024255463179151584
+    ],
+    "mean": 0.0023711797067388807,
+    "n": 20683,
+    "se": 2.8599281550962786e-05
+   },
+   "mcnemar": {
+    "a_only": 108,
+    "b_only": 85,
+    "p": 0.11305123144598511
+   },
+   "nll_diff": {
+    "ci95": [
+     0.0017695907164241716,
+     0.0036803965809652324
+    ],
+    "mean": 0.0027158740811913944,
+    "n": 20683,
+    "se": 0.000492590828436834
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -0.23690953923512062,
+     0.019339554223275154
+    ],
+    "mean": -0.11120243678383213,
+    "n": 20683,
+    "se": 0.0671655914055678
+   }
+  },
+  {
+   "a": "pretrained__analog_W8A8__unity",
+   "b": "pretrained__analog_W8A8__cal",
+   "id": "C4",
+   "isolates": "gain calibration (unity -> calibrated)",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.20510450424864488,
+     -0.19759559130815973
+    ],
+    "mean": -0.20133744444718582,
+    "n": 20683,
+    "se": 0.0019534778826104386
+   },
+   "mcnemar": {
+    "a_only": 491,
+    "b_only": 1300,
+    "p": 3.414628677765039e-84
+   },
+   "nll_diff": {
+    "ci95": [
+     -0.27099468841406366,
+     -0.2527703333625418
+    ],
+    "mean": -0.261838348858424,
+    "n": 20683,
+    "se": 0.004586717848722329
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     3.5052942029686216,
+     4.308006575448435
+    ],
+    "mean": 3.9114248416573996,
+    "n": 20683,
+    "se": 0.2028027786474712
+   }
+  },
+  {
+   "a": "pretrained__analog_W8A8__hist",
+   "b": "pretrained__analog_W8A8__cal",
+   "id": "C4b",
+   "isolates": "calibrated vs historical synthetic-input gains",
+   "kl_ref_diff": {
+    "ci95": [
+     0.00015549779847655982,
+     0.0002456058881328748
+    ],
+    "mean": 0.00020012878297324935,
+    "n": 20683,
+    "se": 2.2854852174337398e-05
+   },
+   "mcnemar": {
+    "a_only": 109,
+    "b_only": 82,
+    "p": 0.05964782114888856
+   },
+   "nll_diff": {
+    "ci95": [
+     0.0006187459389129915,
+     0.0024553037763406253
+    ],
+    "mean": 0.0015471992362836955,
+    "n": 20683,
+    "se": 0.00048227193812324103
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -0.25624909345839575,
+     0.0
+    ],
+    "mean": -0.13054199100710728,
+    "n": 20683,
+    "se": 0.06681493890269358
+   }
+  },
+  {
+   "a": "pretrained__analog_W8A8__cal",
+   "b": "old_int8__analog_W8A8__cal",
+   "id": "C5",
+   "isolates": "old QAT vs PTQ (same hardware, same gains)",
+   "kl_ref_diff": {
+    "ci95": [
+     0.4526946692985451,
+     0.46123279568672726
+    ],
+    "mean": 0.45701280902973557,
+    "n": 20683,
+    "se": 0.0021635599992831166
+   },
+   "mcnemar": {
+    "a_only": 888,
+    "b_only": 544,
+    "p": 8.408872562159534e-20
+   },
+   "nll_diff": {
+    "ci95": [
+     -0.02872675093602491,
+     -0.011139393440741238
+    ],
+    "mean": -0.01977276436505686,
+    "n": 20683,
+    "se": 0.004463779874565871
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -2.0065996228786926,
+     -1.2909152444036165
+    ],
+    "mean": -1.6632016632016633,
+    "n": 20683,
+    "se": 0.1825993167134235
+   }
+  },
+  {
+   "a": "old_int8__legacyadc_W8A8",
+   "b": "old_int8__analog_W8A8__cal",
+   "id": "C8",
+   "isolates": "old QAT checkpoint: its training point (legacy ADC) -> new hardware",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.0029141696540428462,
+     0.0019387361947287493
+    ],
+    "mean": -0.000573719226558537,
+    "n": 20683,
+    "se": 0.0012813791214051457
+   },
+   "mcnemar": {
+    "a_only": 633,
+    "b_only": 527,
+    "p": 0.0020369240379909206
+   },
+   "nll_diff": {
+    "ci95": [
+     0.014628116021630779,
+     0.02834963559390654
+    ],
+    "mean": 0.021365806426560156,
+    "n": 20683,
+    "se": 0.0035255028324305275
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -0.8557752743799255,
+     -0.19810955857467555
+    ],
+    "mean": -0.5124981869167915,
+    "n": 20683,
+    "se": 0.1646357870250988
+   }
+  },
+  {
+   "a": "pretrained__analog_W8A8__cal",
+   "b": "w8a8_kd_pilot5ep_best__analog_W8A8__cal",
+   "id": "C6",
+   "isolates": "new QAT (VAL-selected) vs PTQ",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.0003655588731428841,
+     -0.0002622385057544088
+    ],
+    "mean": -0.00031459988608421017,
+    "n": 20683,
+    "se": 2.6461162097607743e-05
+   },
+   "mcnemar": {
+    "a_only": 114,
+    "b_only": 107,
+    "p": 0.6865986170537436
+   },
+   "nll_diff": {
+    "ci95": [
+     -0.0013758484696015567,
+     0.0008360301998114494
+    ],
+    "mean": -0.00024999568531852923,
+    "n": 20683,
+    "se": 0.0005772715571938512
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -0.17417686022337184,
+     0.10153265967219455
+    ],
+    "mean": -0.03384421989073152,
+    "n": 20683,
+    "se": 0.0718771380159468
+   }
+  },
+  {
+   "a": "old_int8__analog_W8A8__cal",
+   "b": "w8a8_kd_pilot5ep_best__analog_W8A8__cal",
+   "id": "C7",
+   "isolates": "new QAT vs old QAT (same hardware, same gains)",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.4615585805158752,
+     -0.452990110384606
+    ],
+    "mean": -0.4573274089158198,
+    "n": 20683,
+    "se": 0.002164542547626588
+   },
+   "mcnemar": {
+    "a_only": 560,
+    "b_only": 897,
+    "p": 9.41588657924973e-19
+   },
+   "nll_diff": {
+    "ci95": [
+     0.010782907596509773,
+     0.028564318856507644
+    ],
+    "mean": 0.019522768679738334,
+    "n": 20683,
+    "se": 0.00448202706365509
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     1.257071024512885,
+     1.9774694193298845
+    ],
+    "mean": 1.6293574433109317,
+    "n": 20683,
+    "se": 0.18420730273065192
+   }
+  },
+  {
+   "a": "w8a8_kd_pilot5ep_best__analog_W8A8__cal",
+   "b": "w8a8_kd_pilot5ep_final__analog_W8A8__cal",
+   "id": "C7b",
+   "isolates": "new QAT: last vs VAL-selected checkpoint",
+   "kl_ref_diff": {
+    "ci95": [
+     -0.0003825446839819472,
+     -0.0002979639305889928
+    ],
+    "mean": -0.0003398581320329047,
+    "n": 20683,
+    "se": 2.1290810994277902e-05
+   },
+   "mcnemar": {
+    "a_only": 81,
+    "b_only": 97,
+    "p": 0.2608293352608441
+   },
+   "nll_diff": {
+    "ci95": [
+     -0.0015538192905556185,
+     0.0001895970101524662
+    ],
+    "mean": -0.0006769946045693439,
+    "n": 20683,
+    "se": 0.00045994877766435924
+   },
+   "top1_diff_pct": {
+    "ci95": [
+     -0.05318377411400667,
+     0.2030653193443891
+    ],
+    "mean": 0.07735821689310061,
+    "n": 20683,
+    "se": 0.06450477553719891
+   }
+  }
+ ],
+ "composition": [
+  {
+   "contributes": 10000,
+   "duplicates_dropped": 0,
+   "manifest_sha256": "28d391c95b4acb5b49fc43ca9d936b8d9451295107957a1a36d6649636c234d2",
+   "n_images": 10000,
+   "split": "test"
+  },
+  {
+   "contributes": 6814,
+   "duplicates_dropped": 3186,
+   "manifest_sha256": "baf8d5d4feab0a63c914b955f29443b1165fd4bf44371749776da5a7562a0f4f",
+   "n_images": 10000,
+   "split": "test_th07"
+  },
+  {
+   "contributes": 3869,
+   "duplicates_dropped": 6131,
+   "manifest_sha256": "da14691bdf4a3f6b52b333cc533d0886e6c6fc83471f88bed450cc02d09d8a11",
+   "n_images": 10000,
+   "split": "test_top"
+  }
+ ],
+ "duplicate_label_conflicts": 0,
+ "duplicate_logit_mismatches": {
+  "old_int8__analog_W8A8__cal": 0,
+  "old_int8__legacyadc_W8A8": 0,
+  "pretrained__adcoff_W8A8": 0,
+  "pretrained__analog_W8A8__cal": 0,
+  "pretrained__analog_W8A8__hist": 0,
+  "pretrained__analog_W8A8__unity": 0,
+  "pretrained__fp32": 0,
+  "w8a8_kd_pilot5ep_best__analog_W8A8__cal": 0,
+  "w8a8_kd_pilot5ep_final__analog_W8A8__cal": 0
+ },
+ "duplicate_rule": "each distinct file content (SHA-256) once; first occurrence in the order test, test_th07, test_top",
+ "duplicates": 9317,
+ "n": 20683,
+ "per_variant_top1": {
+  "test": {
+   "old_int8__analog_W8A8__cal": 68.22,
+   "old_int8__legacyadc_W8A8": 68.84,
+   "pretrained__adcoff_W8A8": 69.69,
+   "pretrained__analog_W8A8__cal": 69.59,
+   "pretrained__analog_W8A8__hist": 69.75,
+   "pretrained__analog_W8A8__unity": 65.71000000000001,
+   "pretrained__fp32": 69.69,
+   "w8a8_kd_pilot5ep_best__analog_W8A8__cal": 69.69999999999999,
+   "w8a8_kd_pilot5ep_final__analog_W8A8__cal": 69.64
+  },
+  "test_th07": {
+   "old_int8__analog_W8A8__cal": 76.1,
+   "old_int8__legacyadc_W8A8": 76.67,
+   "pretrained__adcoff_W8A8": 78.29,
+   "pretrained__analog_W8A8__cal": 78.18,
+   "pretrained__analog_W8A8__hist": 78.23,
+   "pretrained__analog_W8A8__unity": 73.89,
+   "pretrained__fp32": 78.4,
+   "w8a8_kd_pilot5ep_best__analog_W8A8__cal": 78.11,
+   "w8a8_kd_pilot5ep_final__analog_W8A8__cal": 78.21000000000001
+  },
+  "test_top": {
+   "old_int8__analog_W8A8__cal": 80.69,
+   "old_int8__legacyadc_W8A8": 81.25,
+   "pretrained__adcoff_W8A8": 82.6,
+   "pretrained__analog_W8A8__cal": 82.47,
+   "pretrained__analog_W8A8__hist": 82.59,
+   "pretrained__analog_W8A8__unity": 78.64999999999999,
+   "pretrained__fp32": 82.58,
+   "w8a8_kd_pilot5ep_best__analog_W8A8__cal": 82.37,
+   "w8a8_kd_pilot5ep_final__analog_W8A8__cal": 82.6
+  }
+ },
+ "pooled_content_digest": "602178acf48a780507b6adfd419ead9844e040cc6c47855f76b6ffbd34cd66fe",
+ "post_hoc": [
+  {
+   "a": "pretrained__fp32",
+   "b": "w8a8_kd_pilot5ep_best__analog_W8A8__cal",
+   "id": "P1",
+   "isolates": "POST HOC: new QAT (VAL-selected) on the CIM simulator vs the FP32 pretrained model",
+   "per_variant": {
+    "test": {
+     "kl_ref_diff": {
+      "ci95": [
+       0.0029613442726016508,
+       0.003137494955015496
+      ],
+      "mean": 0.0030482046719288924,
+      "n": 10000,
+      "se": 4.48208474482164e-05
+     },
+     "mcnemar": {
+      "a_only": 59,
+      "b_only": 60,
+      "p": 1.0
+     },
+     "nll_diff": {
+      "ci95": [
+       0.0017365174228502662,
+       0.005023560922805454
+      ],
+      "mean": 0.003309549053322688,
+      "n": 10000,
+      "se": 0.000812838795977808
+     },
+     "top1_diff_pct": {
+      "ci95": [
+       -0.2,
+       0.22999999999999998
+      ],
+      "mean": 0.01,
+      "n": 10000,
+      "se": 0.10909253007429884
+     }
+    },
+    "test_th07": {
+     "kl_ref_diff": {
+      "ci95": [
+       0.0023160439060503617,
+       0.002473614873111971
+      ],
+      "mean": 0.0023955024701084477,
+      "n": 10000,
+      "se": 4.00485432535797e-05
+     },
+     "mcnemar": {
+      "a_only": 65,
+      "b_only": 36,
+      "p": 0.005077381119448142
+     },
+     "nll_diff": {
+      "ci95": [
+       0.001757626464798725,
+       0.004339277592273442
+      ],
+      "mean": 0.0030611923098106332,
+      "n": 10000,
+      "se": 0.0006661852194527918
+     },
+     "top1_diff_pct": {
+      "ci95": [
+       -0.48,
+       -0.1
+      ],
+      "mean": -0.29,
+      "n": 10000,
+      "se": 0.10046192940575047
+     }
+    },
+    "test_top": {
+     "kl_ref_diff": {
+      "ci95": [
+       0.0018425079590239555,
+       0.0019817958234057157
+      ],
+      "mean": 0.0019108721756024877,
+      "n": 10000,
+      "se": 3.422844504812344e-05
+     },
+     "mcnemar": {
+      "a_only": 55,
+      "b_only": 34,
+      "p": 0.0334167216020976
+     },
+     "nll_diff": {
+      "ci95": [
+       0.0014129327156212825,
+       0.003545030077537643
+      ],
+      "mean": 0.002463482430746209,
+      "n": 10000,
+      "se": 0.0005631190499309153
+     },
+     "top1_diff_pct": {
+      "ci95": [
+       -0.4,
+       -0.03
+      ],
+      "mean": -0.21,
+      "n": 10000,
+      "se": 0.0943211516467266
+     }
+    }
+   },
+   "pooled": {
+    "kl_ref_diff": {
+     "ci95": [
+      0.0024828204422445346,
+      0.002597831733361564
+     ],
+     "mean": 0.002539084828379794,
+     "n": 20683,
+     "se": 2.837208953242914e-05
+    },
+    "mcnemar": {
+     "a_only": 124,
+     "b_only": 94,
+     "p": 0.04926582265110969
+    },
+    "nll_diff": {
+     "ci95": [
+      0.0018856209677371753,
+      0.003832101584476532
+     ],
+     "mean": 0.0028610581583031055,
+     "n": 20683,
+     "se": 0.0004974231391765612
+    },
+    "top1_diff_pct": {
+     "ci95": [
+      -0.2804235362374897,
+      -0.004714016341923978
+     ],
+     "mean": -0.14504665667456365,
+     "n": 20683,
+     "se": 0.07138087475464747
+    }
+   }
+  }
+ ],
+ "precision": "W8A8",
+ "rows": [
+  {
+   "agree_ref_pct": 88.2657254750278,
+   "ece_pct": 5.140913771880528,
+   "kl_ref": 0.45986649374419963,
+   "mean_logit_l2": 57.5936018832836,
+   "n": 20683,
+   "nll": 1.053690276592462,
+   "rel_logit_rms_pct": 87.91299597471634,
+   "run": "old_int8__analog_W8A8__cal",
+   "top1_pct": 73.71754581056906,
+   "top1_se_pct": 0.30606356054824246,
+   "top5_pct": 91.85321278344534
+  },
+  {
+   "agree_ref_pct": 89.07798675240535,
+   "ece_pct": 5.253485526562706,
+   "kl_ref": 0.46044021297075816,
+   "mean_logit_l2": 57.41200351223004,
+   "n": 20683,
+   "nll": 1.032324470165902,
+   "rel_logit_rms_pct": 84.51275332004957,
+   "run": "old_int8__legacyadc_W8A8",
+   "top1_pct": 74.23004399748586,
+   "top1_se_pct": 0.30411646350652294,
+   "top5_pct": 92.19165498235266
+  },
+  {
+   "agree_ref_pct": 99.15872939128752,
+   "ece_pct": 8.421976635734898,
+   "kl_ref": 0.0004825050077251235,
+   "mean_logit_l2": 36.03163470848432,
+   "n": 20683,
+   "nll": 1.0707471668763278,
+   "rel_logit_rms_pct": 2.882954118492806,
+   "run": "pretrained__adcoff_W8A8",
+   "top1_pct": 75.49194991055455,
+   "top1_se_pct": 0.29908727452631556,
+   "top5_pct": 92.76700672049509
+  },
+  {
+   "agree_ref_pct": 98.00319102644684,
+   "ece_pct": 8.310754429278793,
+   "kl_ref": 0.0028536847144640044,
+   "mean_logit_l2": 36.11583710644054,
+   "n": 20683,
+   "nll": 1.073463040957519,
+   "rel_logit_rms_pct": 6.912703096536446,
+   "run": "pretrained__analog_W8A8__cal",
+   "top1_pct": 75.38074747377073,
+   "top1_se_pct": 0.2995441796257786,
+   "top5_pct": 92.70415316926945
+  },
+  {
+   "agree_ref_pct": 98.16274234878885,
+   "ece_pct": 8.410078764272507,
+   "kl_ref": 0.0026535559314907545,
+   "mean_logit_l2": 36.104073178562814,
+   "n": 20683,
+   "nll": 1.0719158417212353,
+   "rel_logit_rms_pct": 6.645053425415413,
+   "run": "pretrained__analog_W8A8__hist",
+   "top1_pct": 75.51128946477785,
+   "top1_se_pct": 0.29900753738664637,
+   "top5_pct": 92.70898805782527
+  },
+  {
+   "agree_ref_pct": 85.06986413963158,
+   "ece_pct": 12.102681528170502,
+   "kl_ref": 0.20419112916164983,
+   "mean_logit_l2": 38.05205931872708,
+   "n": 20683,
+   "nll": 1.3353013898159432,
+   "rel_logit_rms_pct": 53.33888817291118,
+   "run": "pretrained__analog_W8A8__unity",
+   "top1_pct": 71.46932263211333,
+   "top1_se_pct": 0.3139851498982592,
+   "top5_pct": 90.02079002079002
+  },
+  {
+   "agree_ref_pct": 100.0,
+   "ece_pct": 8.41376754860109,
+   "kl_ref": 0.0,
+   "mean_logit_l2": 36.034894820189805,
+   "n": 20683,
+   "nll": 1.0703519871138973,
+   "rel_logit_rms_pct": 0.0,
+   "run": "pretrained__fp32",
+   "top1_pct": 75.49194991055455,
+   "top1_se_pct": 0.29908727452631556,
+   "top5_pct": 92.79118116327419
+  },
+  {
+   "agree_ref_pct": 98.0418701348934,
+   "ece_pct": 8.356712441559369,
+   "kl_ref": 0.002539084828379794,
+   "mean_logit_l2": 36.05748763085366,
+   "n": 20683,
+   "nll": 1.0732130452722006,
+   "rel_logit_rms_pct": 6.4238802632818786,
+   "run": "w8a8_kd_pilot5ep_best__analog_W8A8__cal",
+   "top1_pct": 75.34690325387999,
+   "top1_se_pct": 0.29968270343872,
+   "top5_pct": 92.75733694338345
+  },
+  {
+   "agree_ref_pct": 98.24010056568197,
+   "ece_pct": 8.392220594761422,
+   "kl_ref": 0.0021992266963468893,
+   "mean_logit_l2": 36.0521718211996,
+   "n": 20683,
+   "nll": 1.0725360506676314,
+   "rel_logit_rms_pct": 6.05191875722544,
+   "run": "w8a8_kd_pilot5ep_final__analog_W8A8__cal",
+   "top1_pct": 75.4242614707731,
+   "top1_se_pct": 0.29936571157018815,
+   "top5_pct": 92.76700672049509
+  }
+ ],
+ "rows_left_out": {
+  "test": [],
+  "test_th07": [],
+  "test_top": []
+ },
+ "split": "test_pooled",
+ "time_utc": "2026-10-30T17:17:21+00:00"
+}

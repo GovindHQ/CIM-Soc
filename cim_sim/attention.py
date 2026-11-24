@@ -88,6 +88,22 @@ class CIMAttention(nn.Module):
         return self.attention_biases[:, self.attention_bias_idxs]
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:  # x (B, N, C)
+        # The array path runs in NumPy on detached copies (_np), so autograd
+        # sees no dependence of the output on x, qkv.weight, q, k or v: training
+        # through it would silently give those tensors ZERO gradient (only the
+        # biases and the residual path would learn). Fail loudly instead. Eval
+        # under torch.no_grad() - every caller in this repository - is
+        # unaffected. QAT must use a differentiable surrogate validated against
+        # this module, not this module itself.
+        if (self.training and torch.is_grad_enabled() and self.cim_enabled
+                and (self.cim_ops & {"qkv", "qk", "av"} or self.cim_out_proj)):
+            raise RuntimeError(
+                f"{self.name}: the CIM array path is a non-differentiable NumPy "
+                "reference model; backpropagating through it would give zero "
+                "gradients to qkv.weight and everything upstream of the "
+                "attention branch. Use torch.no_grad()/model.eval() for "
+                "inference, set_cim_enabled(model, False) for float training, "
+                "or a differentiable surrogate for QAT.")
         B, N, C = x.shape
         x = self.norm(x)
 

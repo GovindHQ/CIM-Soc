@@ -1,0 +1,83 @@
+{
+ "test_th07": {
+  "added_utc": "2026-10-29T18:07:22+00:00",
+  "archive": "imagenetv2-threshold0.7.tar.gz",
+  "archive_sha256": "32142bfe998f9cfa4141be691f6a80eeb1e27b24bd532a668eb08c26d98897a2",
+  "content_overlap_before_exclusion": {
+   "cal": 0,
+   "calcheck": 0,
+   "test": 3186,
+   "train": 0,
+   "val": 0
+  },
+  "excluded": 0,
+  "files_on_disk": 10000,
+  "hashes_sha256": "5e4977c402ad5e0b912481e00bf931cf7c3ca6b61376abdfa61321a59ac1a0da",
+  "listing": {
+   "classes_not_10": [],
+   "files": 10000,
+   "non_image_files": 0,
+   "per_class_max": 10,
+   "per_class_min": 10,
+   "root": "/media/user/DATA 1/cim_qat_work/data/imagenetv2_ext/threshold0.7/imagenetv2-threshold0.7-format-val",
+   "symlinks": 0
+  },
+  "manifest_sha256": "baf8d5d4feab0a63c914b955f29443b1165fd4bf44371749776da5a7562a0f4f",
+  "mapping": {
+   "classes": 1000,
+   "label_is_int_folder": true,
+   "ok": true,
+   "per_class_max": 10,
+   "per_class_min": 10,
+   "wnid_matches_index": true
+  },
+  "n": 10000,
+  "ok": true,
+  "path_shared_with_registered_splits": 0,
+  "root": "/media/user/DATA 1/cim_qat_work/data/imagenetv2_ext/threshold0.7/imagenetv2-threshold0.7-format-val",
+  "rule": "declared 29 Oct 2026, before any extension image was read: an image of a new ImageNetV2 variant whose file content equals a CAL, CALCHECK, VAL or TRAIN image is removed from that variant (counted and listed in excluded_<split>.csv). Duplicates of matched-frequency TEST images, and between variants, stay in each variant; the pooled report counts every distinct image once (first occurrence in the order matched-frequency, threshold-0.7, top-images).",
+  "variant": "imagenetv2-threshold0.7-format-val",
+  "within_duplicates": 0
+ },
+ "test_top": {
+  "added_utc": "2026-10-29T18:08:19+00:00",
+  "archive": "imagenetv2-top-images.tar.gz",
+  "archive_sha256": "85e4ace30f3f0d660152062254b8759dda66267b27f7ec0fd8d5768f1073a04b",
+  "content_overlap_before_exclusion": {
+   "cal": 0,
+   "calcheck": 0,
+   "test": 3070,
+   "test_th07": 4996,
+   "train": 0,
+   "val": 0
+  },
+  "excluded": 0,
+  "files_on_disk": 10000,
+  "hashes_sha256": "f9e12483ce1d71f8fd828a0a1e3db72794c5ed0bad1028d6e6babe299818780e",
+  "listing": {
+   "classes_not_10": [],
+   "files": 10000,
+   "non_image_files": 0,
+   "per_class_max": 10,
+   "per_class_min": 10,
+   "root": "/media/user/DATA 1/cim_qat_work/data/imagenetv2_ext/top-images/imagenetv2-top-images-format-val",
+   "symlinks": 0
+  },
+  "manifest_sha256": "da14691bdf4a3f6b52b333cc533d0886e6c6fc83471f88bed450cc02d09d8a11",
+  "mapping": {
+   "classes": 1000,
+   "label_is_int_folder": true,
+   "ok": true,
+   "per_class_max": 10,
+   "per_class_min": 10,
+   "wnid_matches_index": true
+  },
+  "n": 10000,
+  "ok": true,
+  "path_shared_with_registered_splits": 0,
+  "root": "/media/user/DATA 1/cim_qat_work/data/imagenetv2_ext/top-images/imagenetv2-top-images-format-val",
+  "rule": "declared 29 Oct 2026, before any extension image was read: an image of a new ImageNetV2 variant whose file content equals a CAL, CALCHECK, VAL or TRAIN image is removed from that variant (counted and listed in excluded_<split>.csv). Duplicates of matched-frequency TEST images, and between variants, stay in each variant; the pooled report counts every distinct image once (first occurrence in the order matched-frequency, threshold-0.7, top-images).",
+  "variant": "imagenetv2-top-images-format-val",
+  "within_duplicates": 0
+ }
+}

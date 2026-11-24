@@ -1,13 +1,23 @@
 # cim_sim — 32×32 CIM array model for ViT attention
 
-A software model of a single 32×32 weight-stationary compute-in-memory array,
-and a drop-in replacement for the matmuls inside TinyViT-5M attention.
+A software model of 32×32 weight-stationary compute-in-memory macros, and a
+drop-in replacement for the matmuls inside TinyViT-5M attention.
 
-Scope of this version, as scoped: **one array, one weight plane, INT4 weights
-and activations, no ADC model.** The three attention matmul sites — fused QKV
-projection, QKᵀ, AV — execute on the array. LayerNorm, attention biases, softmax,
-the output projection and the MLP stay in float, which is where they stay in the
-hardware too.
+> **Current scope (Oct 2026).** 4- or 8-bit weights and activations (independent),
+> one or more arrays, two separate converter models: the LEGACY digital MAC with an
+> optional functional ADC, and the physical ANALOG chain
+> (unsigned 8-bit capacitive DAC → C2C macro → per-op gain → SAR ADC). The three
+> attention matmul sites — fused QKV projection, QKᵀ, AV — execute on the array.
+> LayerNorm, attention biases, softmax, the output projection and the MLP stay in float.
+>
+> - Real-image (Imagenette) experiments: **`EXPERIMENTS.md`** / `run_experiment.py`
+>   (Experiment A primary fixed-gain matrix; optional B = gain calibration, T = QAT
+>   training-point check)
+> - Engineering specification: **`CLAUDE.md`**
+> - Audit of the delivered code and the change list: `AUDIT.md`, `CHANGES.md`
+>
+> The text below the next heading describes the original single-array INT4 version and
+> is kept for its explanations of the scheduler and the scale placement.
 
 ## Layout
 
@@ -27,8 +37,14 @@ _shim/timm/      three-symbol timm stand-in so tiny_vit.py imports cleanly
 ## Run
 
 ```bash
-pip install torch numpy
+pip install -r requirements.txt            # see EXPERIMENTS.md for the torch CPU wheel
 python verify_array.py                     # prove the schedule is exact
+python test_analog.py                      # analog datapath (98 checks, capacitive DAC only)
+python test_qat_contract.py                # QAT surrogate contract, tie/grad guards, 8-bit-ADC defaults
+python test_multi_array.py                 # multi-array scheduling invariants
+python test_experiment_pipeline.py         # real-image pipeline logic (offline)
+python run_tinyvit.py --stage3-only --analog --weight-bits 8 --act-bits 8 \
+       --gain-qkv 23.77 --gain-qk 8.41 --gain-av 2.92   # analog chain, stage-3 block
 python run_tinyvit.py --stage3-only        # one stage-3 block, full tile map
 python run_tinyvit.py --ablate             # which matmul site costs accuracy
 python run_tinyvit.py --sweep-bits         # 2/3/4/6/8 bit

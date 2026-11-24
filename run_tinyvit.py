@@ -9,6 +9,19 @@ Usage:
     python run_tinyvit.py --token-block 8    # sweep the psum/write tradeoff
     python run_tinyvit.py --act-bits 8 --weight-bits 8
 
+    # physical analog datapath (8-bit CDAC -> C2C -> gain -> SAR ADC):
+    python run_tinyvit.py --analog --adc-bits 8 --gain-qkv 23.77 --gain-qk 8.41 --gain-av 2.92
+
+ANALOG vs LEGACY
+----------------
+Without --analog every mode runs the LEGACY digital-MAC model (optionally with
+the functional --adc-enabled ADC). The physical analog chain is used ONLY when
+--analog is given; then --adc-bits / --adc-vref configure the SAR ADC and
+--adc-enabled must not be set. --sweep-bits, --compare-adc and
+--sweep-token-block are legacy-only and refuse --analog.
+
+The real-image (Imagenette) experiment lives in run_experiment.py, not here.
+
 CAVEAT ON THE ACCURACY NUMBERS
 ------------------------------
 No ImageNet data is available in this environment, so the inputs are synthetic
@@ -32,6 +45,7 @@ import numpy as np
 import torch
 
 from cim_sim import CIMArray, CIMConfig, TraceLog, cosine_sim, report, tile_map
+from cim_sim.analog import AnalogConfig
 from cim_sim.attention import (CIMAttention, convert_attention,
                                set_cim_enabled, set_cim_ops)
 from tiny_vit import TinyViT
@@ -166,9 +180,30 @@ def run_stage3_only(cfg: CIMConfig) -> None:
         print(f"  {label}  {tile_map(n, k, m)}")
     print()
     print(report(log))
+    print_analog_summary(array)
     err = (out - ref).norm() / ref.norm()
     print(f"\n  output relative error vs float32: {err:.2%}"
           f"   cosine: {cosine_sim(out.detach().numpy(), ref.detach().numpy()):.4f}")
+
+
+def print_analog_summary(array: CIMArray) -> None:
+    """Per-operation analog node statistics (no-op on the legacy path)."""
+    ch = getattr(array, "chain", None)
+    if ch is None:
+        return
+    s = ch.stats.summary(adc_vref=ch.adc.vref, adc_bits=ch.adc.bits)
+    amp = ("not modelled" if not ch.amp.saturation_modeled else "modelled")
+    print(f"\nANALOG PATH ACTIVE  DAC={ch.dac.name} {ch.dac.bits}b Vref={ch.dac.vref}V "
+          f"align={ch.dac_alignment}  ADC={ch.adc.bits}b Vref={ch.adc.vref}V  "
+          f"amp saturation: {amp}")
+    print(f"{'op':>6}{'G':>8}{'conversions':>14}{'clip%':>9}{'|V_OA| p99.9':>14}"
+          f"{'|V_ADC| p99.9':>15}{'swing p99.9':>13}")
+    for op, v in s.items():
+        g = ch.cfg.gain_for(op)
+        print(f"{str(op):>6}{g:>8.2f}{v['n']:>14,}{v['clip_pct']:>8.3f}%"
+              f"{v.get('voa_absp999', 0) * 1e3:>11.3f} mV"
+              f"{v.get('vadc_absp999', 0) * 1e3:>12.2f} mV"
+              f"{v.get('util_p999_pct', 0):>12.1f}%")
 
 
 def run_full(cfg: CIMConfig, n_images: int, cim_out_proj: bool) -> None:
@@ -190,6 +225,7 @@ def run_full(cfg: CIMConfig, n_images: int, cim_out_proj: bool) -> None:
 
     print()
     print(report(log))
+    print_analog_summary(array)
 
     print()
     print("=" * 78)
@@ -496,6 +532,19 @@ def main() -> None:
                    help="TinyViT-5M state_dict to use instead of the pretrained "
                         "checkpoint, e.g. a QAT-trained one (pair it with the "
                         "matching --weight-bits)")
+    # ---- physical analog datapath (opt-in) ------------------------------ #
+    p.add_argument("--analog", action="store_true",
+                   help="use the physical analog chain (DAC -> C2C -> gain -> "
+                        "SAR ADC) instead of the legacy digital MAC; "
+                        "--adc-bits/--adc-vref then configure the SAR ADC")
+    p.add_argument("--dac-bits", type=int, default=8,
+                   help="input DAC resolution (hardware capacitive DAC: 8)")
+    p.add_argument("--dac-vref", type=float, default=0.6)
+    p.add_argument("--dac-align", default="msb", choices=["msb", "lsb"],
+                   help="placement of a narrower activation code on the DAC")
+    p.add_argument("--gain-qkv", type=float, default=1.0)
+    p.add_argument("--gain-qk", type=float, default=1.0)
+    p.add_argument("--gain-av", type=float, default=1.0)
     a = p.parse_args()
 
     global WEIGHTS
@@ -504,12 +553,34 @@ def main() -> None:
         if not WEIGHTS.is_file():
             p.error(f"--weights: no such file: {WEIGHTS}")
 
+    analog_cfg = None
+    if a.analog:
+        if a.adc_enabled:
+            p.error("--analog and --adc-enabled are mutually exclusive: the "
+                    "analog chain has its own SAR ADC (--adc-bits/--adc-vref)")
+        if a.sweep_bits or a.compare_adc or a.sweep_token_block:
+            p.error("--sweep-bits/--compare-adc/--sweep-token-block are "
+                    "legacy-only modes and do not support --analog")
+        analog_cfg = AnalogConfig(enabled=True,
+                                  dac_bits=a.dac_bits, dac_vref=a.dac_vref,
+                                  dac_input_alignment=a.dac_align,
+                                  gain_per_op={"qkv": a.gain_qkv,
+                                               "qk": a.gain_qk,
+                                               "av": a.gain_av},
+                                  adc_bits=a.adc_bits, adc_vref=a.adc_vref)
+
     cfg = CIMConfig(rows=32, cols=32, act_bits=a.act_bits,
                     weight_bits=a.weight_bits, token_block=a.token_block,
                     adc_enabled=a.adc_enabled, adc_bits=a.adc_bits,
-                    adc_vref=a.adc_vref)
-    adc_str = (f"ADC {cfg.adc_bits}b @ Vref={cfg.adc_vref}V"
-              if cfg.adc_enabled else "ADC disabled (exact column sums)")
+                    adc_vref=a.adc_vref, analog=analog_cfg)
+    if analog_cfg is not None:
+        adc_str = (f"ANALOG chain: capacitive DAC {a.dac_bits}b @ {a.dac_vref}V "
+                   f"({a.dac_align}-aligned) -> C2C -> gain "
+                   f"qkv={a.gain_qkv:g}/qk={a.gain_qk:g}/av={a.gain_av:g} -> "
+                   f"SAR ADC {a.adc_bits}b @ Vref={a.adc_vref}V")
+    else:
+        adc_str = (f"legacy ADC {cfg.adc_bits}b @ Vref={cfg.adc_vref}V"
+                   if cfg.adc_enabled else "legacy, ADC disabled (exact column sums)")
     print(f"CIM fabric: {cfg.rows}x{cfg.cols}, {cfg.weight_bits}b weights, "
           f"{cfg.act_bits}b activations, {cfg.planes} plane, "
           f"{a.num_arrays} array(s), T={cfg.token_block or 'all tokens'}, {adc_str}")

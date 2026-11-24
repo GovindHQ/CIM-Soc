@@ -18,12 +18,15 @@ Three claims are tested:
      any error observed later is attributable to 4 bits, not to the schedule.
 """
 
+import sys
+
 import numpy as np
 
 from cim_sim import (CIMArray, CIMConfig, TraceLog, cim_matmul, fake_quant,
                      rel_error, tile_map)
 
 rng = np.random.default_rng(0)
+FAILURES = []    # (added Oct 2026) sections 1 and 3 used to print only
 SHAPES = [
     (196, 160, 480),   # TinyViT-5M stage 3 fused QKV projection
     (196, 32, 196),    # stage 3 QK^T, one head
@@ -49,6 +52,8 @@ for N, K, M in SHAPES:
     ref = fake_quant(Xi, bits=8, axis=1) @ Wi
     ok = np.allclose(Y, ref, rtol=0, atol=1e-6)
     print(f"  {str((N,K,M)):>18}  exact={ok}   {tile_map(N,K,M)}")
+    if not ok:
+        FAILURES.append(f"tiling not exact for {(N, K, M)}")
 
 print()
 print("=" * 78)
@@ -94,4 +99,11 @@ for N, K, M in SHAPES:
     e_plain = rel_error(Yq, ref)
     print(f"  {str((N,K,M)):>18}  {e_tiled:>9.4%}  {e_plain:>9.4%}  "
           f"{abs(e_tiled - e_plain):>9.2e}")
+    if abs(e_tiled - e_plain) > 1e-12:
+        FAILURES.append(f"tiled vs untiled 4-bit error gap for {(N, K, M)}")
 print("  -> tiled and untiled 4-bit errors agree; the schedule adds nothing.")
+
+if FAILURES:
+    print("\nFAILED:", *FAILURES, sep="\n  ")
+    sys.exit(1)
+print("\nverify_array: all checks passed")

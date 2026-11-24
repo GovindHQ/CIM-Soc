@@ -15,7 +15,7 @@ Quick start
     from cim_sim.analog import AnalogConfig
 
     cfg = CIMConfig(weight_bits=8, act_bits=8,
-                    analog=AnalogConfig(enabled=True, dac_type="CAPACITIVE",
+                    analog=AnalogConfig(enabled=True,
                                         gain_per_op={"qkv": 4.0, "qk": 2.0}))
     array = CIMArray(cfg)
     print(array.chain.scale_report())
@@ -23,20 +23,18 @@ Quick start
 
 from .adc import (ADCNonidealities, GainNonidealities, PreADCGain, SARADC,
                   SARDAC, SARDACNonidealities)
-from .chain import AnalogChain, AnalogConfig, AnalogStats
-from .dac import (DAC_TYPES, BaseDAC, CapacitiveDAC, CurrentSteeringDAC,
-                  DACNonidealities, DifferentialDAC, IdealLinearSignedDAC,
-                  R2RDAC, make_dac)
+from .chain import (DAC_ALIGNMENTS, QAT_INITIAL_ADC_BITS, AnalogChain,
+                    AnalogConfig, AnalogStats)
+from .dac import CapacitiveDAC, DACNonidealities
 from .digital import DigitalAccumulator, Requantizer
 from .macro import C2CMacro, MacroNonidealities, SignedWeightAdapter
 
 __all__ = [
     # chain
-    "AnalogChain", "AnalogConfig", "AnalogStats",
-    # input DAC
-    "DAC_TYPES", "make_dac", "BaseDAC", "IdealLinearSignedDAC", "R2RDAC",
-    "CapacitiveDAC", "CurrentSteeringDAC", "DifferentialDAC",
-    "DACNonidealities",
+    "AnalogChain", "AnalogConfig", "AnalogStats", "DAC_ALIGNMENTS",
+    "QAT_INITIAL_ADC_BITS",
+    # input DAC (hardware-specified unsigned 8-bit capacitive DAC only)
+    "CapacitiveDAC", "DACNonidealities",
     # C2C macro
     "C2CMacro", "SignedWeightAdapter", "MacroNonidealities",
     # gain + SAR ADC

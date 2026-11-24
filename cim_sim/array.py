@@ -85,14 +85,23 @@ accumulator contract (`acc += y`) is unchanged; the ADC's effect is purely a
 resolution loss (256 levels across the full symmetric range) plus saturation
 clipping at +/- full_scale.
 
-KNOWN LIMITATION: full_scale assumes both operands use the full signed
-two's-complement range. The one place that isn't true is post-softmax AV
-activations, which are quantized unsigned (0..2^act_bits-1, see
-quant.act_signed=False) and so never reach the negative extreme. full_scale is
-therefore conservative (slightly coarser ADC step size than strictly
-necessary) for that case — never wrong, just not maximally tight. Fixing this
-exactly would require threading operand signedness into CIMArray, which is out
-of scope for this change.
+KNOWN LIMITATIONS (corrected Oct 2026; the earlier note here said full_scale
+was "conservative, never wrong" for AV, which is false):
+
+  * full_scale is NOT a bound for AV. Post-softmax AV activations are quantized
+    UNSIGNED (0..2^act_bits-1, quant act_signed=False), so their magnitude
+    reaches 2^act_bits - 1, not 2^(act_bits-1). Worst case at W4/A4:
+    32 * 15 * 7 = 3360 > full_scale = 2048 (W8/A8: 32 * 255 * 127 > 524288).
+    Real AV partial sums do exceed it and are CLIPPED (counted in
+    adc_saturations). For signed x signed operands the bound holds, because
+    quant.quantize never emits -2^(b-1), so |y| <= rows*(2^(w-1)-1)*(2^(a-1)-1).
+  * The transfer is MID-RISE: with 2^bits - 1 steps across [-FS, FS] there is
+    no zero code, so an exact-zero column sum decodes to about +LSB/2
+    (+8 at W4/A4, +2056 at W8/A8; np.rint(127.5) = 128).
+
+Both are properties of this legacy functional model, kept unchanged so that
+earlier results (and the QAT checkpoints trained against it) reproduce. The
+physical analog chain (cim_sim.analog) has a zero code and a gain-set range.
 
 BATCHING NOTE
 -------------
@@ -259,7 +268,10 @@ def _adc_convert(y: np.ndarray, bits: int, full_scale: int
 class CIMArray:
     """A single 32x32 weight-stationary CIM array."""
 
-    def __init__(self, cfg: CIMConfig | None = None):
+    def __init__(self, cfg: CIMConfig | None = None, analog_stats=None):
+        """`analog_stats`: optional shared cim_sim.analog.AnalogStats, so a pool
+        of arrays (or a whole run) records into one set of statistics. Only
+        used when cfg.analog is enabled; observation only."""
         self.cfg = cfg or CIMConfig()
         self.stats = CIMStats()
         self._W: np.ndarray | None = None       # resident weight tile
@@ -275,7 +287,8 @@ class CIMArray:
             from .analog import AnalogChain
             self.chain = AnalogChain(self.cfg.analog, rows=self.cfg.rows,
                                      weight_bits=self.cfg.weight_bits,
-                                     act_bits=self.cfg.act_bits)
+                                     act_bits=self.cfg.act_bits,
+                                     stats=analog_stats)
 
         # Data-independent ADC full-scale: the worst-case column sum this
         # geometry and these operand bit widths can ever produce. See the

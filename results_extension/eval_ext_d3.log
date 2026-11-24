@@ -1,0 +1,847 @@
+nohup: ignoring input
+QAT_CODE=/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8
+QAT_WORK=/media/user/DATA 1/cim_qat_work
+CUDA_VISIBLE_DEVICES=1 (CUDA_DEVICE_ORDER=PCI_BUS_ID)  TMPDIR=/media/user/DATA 1/cim_qat_work/tmp
+python 3.11.16 /home/user/anaconda3/envs/cim_soc_qat/bin/python
+start 2026-10-29T18:30:09Z  code /media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8  workers 16  phase AB  W8NEW=w8a8_kd_pilot5ep  W4NEW=w4a4_kd_pilot10ep_full
+=== phase A (priority rows) test_th07 2026-10-29T18:30:09Z
+--- E1: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind fp32
+  [fp32] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  13s elapsed  ~244s left
+    20/200 chunks  23s elapsed  ~209s left
+    30/200 chunks  25s elapsed  ~139s left
+    40/200 chunks  35s elapsed  ~141s left
+    50/200 chunks  45s elapsed  ~135s left
+    60/200 chunks  47s elapsed  ~110s left
+    70/200 chunks  57s elapsed  ~106s left
+    80/200 chunks  63s elapsed  ~95s left
+    90/200 chunks  69s elapsed  ~84s left
+    100/200 chunks  78s elapsed  ~78s left
+    110/200 chunks  84s elapsed  ~69s left
+    120/200 chunks  90s elapsed  ~60s left
+    130/200 chunks  100s elapsed  ~54s left
+    140/200 chunks  105s elapsed  ~45s left
+    150/200 chunks  112s elapsed  ~37s left
+    160/200 chunks  121s elapsed  ~30s left
+    170/200 chunks  125s elapsed  ~22s left
+    180/200 chunks  134s elapsed  ~15s left
+    190/200 chunks  141s elapsed  ~7s left
+    200/200 chunks  142s elapsed  ~0s left
+done: pretrained__fp32 n=10000 cpu 0.22 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__fp32
+--- E2 SKIPPED (--skip)
+--- E3 SKIPPED (--skip)
+--- E4: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind analog --gain-set cal --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  52s elapsed  ~979s left
+    20/200 chunks  102s elapsed  ~914s left
+    30/200 chunks  104s elapsed  ~587s left
+    40/200 chunks  153s elapsed  ~611s left
+    50/200 chunks  201s elapsed  ~603s left
+    60/200 chunks  205s elapsed  ~478s left
+    70/200 chunks  253s elapsed  ~471s left
+    80/200 chunks  262s elapsed  ~393s left
+    90/200 chunks  305s elapsed  ~373s left
+    100/200 chunks  351s elapsed  ~351s left
+    110/200 chunks  362s elapsed  ~296s left
+    120/200 chunks  405s elapsed  ~270s left
+    130/200 chunks  450s elapsed  ~242s left
+    140/200 chunks  459s elapsed  ~197s left
+    150/200 chunks  505s elapsed  ~168s left
+    160/200 chunks  518s elapsed  ~130s left
+    170/200 chunks  559s elapsed  ~99s left
+    180/200 chunks  602s elapsed  ~67s left
+    190/200 chunks  618s elapsed  ~33s left
+    200/200 chunks  652s elapsed  ~0s left
+done: pretrained__analog_W8A8__cal n=10000 cpu 1.00 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__analog_W8A8__cal
+--- E4b SKIPPED (--skip)
+--- E5: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model old_int8 --kind analog --gain-set cal --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  52s elapsed  ~988s left
+    20/200 chunks  102s elapsed  ~919s left
+    30/200 chunks  104s elapsed  ~592s left
+    40/200 chunks  154s elapsed  ~615s left
+    50/200 chunks  200s elapsed  ~600s left
+    60/200 chunks  206s elapsed  ~480s left
+    70/200 chunks  254s elapsed  ~472s left
+    80/200 chunks  259s elapsed  ~389s left
+    90/200 chunks  309s elapsed  ~378s left
+    100/200 chunks  354s elapsed  ~354s left
+    110/200 chunks  362s elapsed  ~296s left
+    120/200 chunks  411s elapsed  ~274s left
+    130/200 chunks  451s elapsed  ~243s left
+    140/200 chunks  464s elapsed  ~199s left
+    150/200 chunks  506s elapsed  ~169s left
+    160/200 chunks  519s elapsed  ~130s left
+    170/200 chunks  565s elapsed  ~100s left
+    180/200 chunks  606s elapsed  ~67s left
+    190/200 chunks  619s elapsed  ~33s left
+    200/200 chunks  656s elapsed  ~0s left
+done: old_int8__analog_W8A8__cal n=10000 cpu 1.01 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/old_int8__analog_W8A8__cal
+--- E5b SKIPPED (--skip)
+--- E6: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model run:w8a8_kd_pilot5ep:best --kind analog --gain-set cal --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  52s elapsed  ~992s left
+    20/200 chunks  102s elapsed  ~918s left
+    30/200 chunks  105s elapsed  ~593s left
+    40/200 chunks  153s elapsed  ~614s left
+    50/200 chunks  202s elapsed  ~605s left
+    60/200 chunks  206s elapsed  ~480s left
+    70/200 chunks  253s elapsed  ~470s left
+    80/200 chunks  261s elapsed  ~391s left
+    90/200 chunks  303s elapsed  ~371s left
+    100/200 chunks  351s elapsed  ~351s left
+    110/200 chunks  357s elapsed  ~292s left
+    120/200 chunks  402s elapsed  ~268s left
+    130/200 chunks  447s elapsed  ~241s left
+    140/200 chunks  455s elapsed  ~195s left
+    150/200 chunks  500s elapsed  ~167s left
+    160/200 chunks  511s elapsed  ~128s left
+    170/200 chunks  552s elapsed  ~97s left
+    180/200 chunks  597s elapsed  ~66s left
+    190/200 chunks  606s elapsed  ~32s left
+    200/200 chunks  645s elapsed  ~0s left
+done: w8a8_kd_pilot5ep_best__analog_W8A8__cal n=10000 cpu 0.99 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/w8a8_kd_pilot5ep_best__analog_W8A8__cal
+--- E6s SKIPPED (--skip)
+--- E1: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind fp32
+already finished: pretrained__fp32 (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__fp32
+--- E2 SKIPPED (--skip)
+--- E3 SKIPPED (--skip)
+--- E4: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind analog --gain-set cal --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  51s elapsed  ~967s left
+    20/200 chunks  99s elapsed  ~887s left
+    30/200 chunks  102s elapsed  ~576s left
+    40/200 chunks  149s elapsed  ~598s left
+    50/200 chunks  194s elapsed  ~582s left
+    60/200 chunks  200s elapsed  ~467s left
+    70/200 chunks  244s elapsed  ~453s left
+    80/200 chunks  253s elapsed  ~379s left
+    90/200 chunks  298s elapsed  ~364s left
+    100/200 chunks  339s elapsed  ~339s left
+    110/200 chunks  350s elapsed  ~286s left
+    120/200 chunks  394s elapsed  ~263s left
+    130/200 chunks  433s elapsed  ~233s left
+    140/200 chunks  445s elapsed  ~191s left
+    150/200 chunks  483s elapsed  ~161s left
+    160/200 chunks  500s elapsed  ~125s left
+    170/200 chunks  540s elapsed  ~95s left
+    180/200 chunks  577s elapsed  ~64s left
+    190/200 chunks  592s elapsed  ~31s left
+    200/200 chunks  629s elapsed  ~0s left
+done: pretrained__analog_W4A4__cal n=10000 cpu 0.96 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__analog_W4A4__cal
+--- E5: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model old_int4 --kind analog --gain-set cal --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  50s elapsed  ~952s left
+    20/200 chunks  97s elapsed  ~870s left
+    30/200 chunks  99s elapsed  ~563s left
+    40/200 chunks  146s elapsed  ~582s left
+    50/200 chunks  189s elapsed  ~568s left
+    60/200 chunks  196s elapsed  ~458s left
+    70/200 chunks  239s elapsed  ~443s left
+    80/200 chunks  246s elapsed  ~368s left
+    90/200 chunks  289s elapsed  ~354s left
+    100/200 chunks  332s elapsed  ~332s left
+    110/200 chunks  342s elapsed  ~279s left
+    120/200 chunks  381s elapsed  ~254s left
+    130/200 chunks  423s elapsed  ~228s left
+    140/200 chunks  436s elapsed  ~187s left
+    150/200 chunks  474s elapsed  ~158s left
+    160/200 chunks  486s elapsed  ~121s left
+    170/200 chunks  525s elapsed  ~93s left
+    180/200 chunks  566s elapsed  ~63s left
+    190/200 chunks  579s elapsed  ~30s left
+    200/200 chunks  613s elapsed  ~0s left
+done: old_int4__analog_W4A4__cal n=10000 cpu 0.94 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/old_int4__analog_W4A4__cal
+--- E5b SKIPPED (--skip)
+--- E6: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model run:w4a4_kd_pilot10ep_full:best --kind analog --gain-set cal --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  52s elapsed  ~985s left
+    20/200 chunks  102s elapsed  ~914s left
+    30/200 chunks  104s elapsed  ~587s left
+    40/200 chunks  152s elapsed  ~609s left
+    50/200 chunks  200s elapsed  ~601s left
+    60/200 chunks  204s elapsed  ~477s left
+    70/200 chunks  250s elapsed  ~464s left
+    80/200 chunks  258s elapsed  ~387s left
+    90/200 chunks  304s elapsed  ~371s left
+    100/200 chunks  349s elapsed  ~349s left
+    110/200 chunks  357s elapsed  ~292s left
+    120/200 chunks  401s elapsed  ~267s left
+    130/200 chunks  444s elapsed  ~239s left
+    140/200 chunks  456s elapsed  ~195s left
+    150/200 chunks  498s elapsed  ~166s left
+    160/200 chunks  511s elapsed  ~128s left
+    170/200 chunks  553s elapsed  ~98s left
+    180/200 chunks  596s elapsed  ~66s left
+    190/200 chunks  610s elapsed  ~32s left
+    200/200 chunks  643s elapsed  ~0s left
+done: w4a4_kd_pilot10ep_full_best__analog_W4A4__cal n=10000 cpu 0.99 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/w4a4_kd_pilot10ep_full_best__analog_W4A4__cal
+--- E6s SKIPPED (--skip)
+=== phase A (priority rows) test_top 2026-10-29T19:37:57Z
+--- E1: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind fp32
+  [fp32] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  12s elapsed  ~234s left
+    20/200 chunks  23s elapsed  ~206s left
+    30/200 chunks  25s elapsed  ~144s left
+    40/200 chunks  35s elapsed  ~140s left
+    50/200 chunks  43s elapsed  ~129s left
+    60/200 chunks  47s elapsed  ~110s left
+    70/200 chunks  55s elapsed  ~101s left
+    80/200 chunks  60s elapsed  ~90s left
+    90/200 chunks  68s elapsed  ~83s left
+    100/200 chunks  74s elapsed  ~74s left
+    110/200 chunks  81s elapsed  ~67s left
+    120/200 chunks  89s elapsed  ~59s left
+    130/200 chunks  95s elapsed  ~51s left
+    140/200 chunks  103s elapsed  ~44s left
+    150/200 chunks  109s elapsed  ~36s left
+    160/200 chunks  115s elapsed  ~29s left
+    170/200 chunks  121s elapsed  ~21s left
+    180/200 chunks  129s elapsed  ~14s left
+    190/200 chunks  134s elapsed  ~7s left
+    200/200 chunks  136s elapsed  ~0s left
+done: pretrained__fp32 n=10000 cpu 0.21 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__fp32
+--- E2 SKIPPED (--skip)
+--- E3 SKIPPED (--skip)
+--- E4: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind analog --gain-set cal --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  52s elapsed  ~996s left
+    20/200 chunks  102s elapsed  ~917s left
+    30/200 chunks  104s elapsed  ~587s left
+    40/200 chunks  153s elapsed  ~613s left
+    50/200 chunks  202s elapsed  ~605s left
+    60/200 chunks  206s elapsed  ~480s left
+    70/200 chunks  254s elapsed  ~471s left
+    80/200 chunks  257s elapsed  ~386s left
+    90/200 chunks  307s elapsed  ~375s left
+    100/200 chunks  353s elapsed  ~353s left
+    110/200 chunks  360s elapsed  ~294s left
+    120/200 chunks  408s elapsed  ~272s left
+    130/200 chunks  452s elapsed  ~243s left
+    140/200 chunks  460s elapsed  ~197s left
+    150/200 chunks  506s elapsed  ~169s left
+    160/200 chunks  516s elapsed  ~129s left
+    170/200 chunks  560s elapsed  ~99s left
+    180/200 chunks  603s elapsed  ~67s left
+    190/200 chunks  614s elapsed  ~32s left
+    200/200 chunks  653s elapsed  ~0s left
+done: pretrained__analog_W8A8__cal n=10000 cpu 1.00 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__analog_W8A8__cal
+--- E4b SKIPPED (--skip)
+--- E5: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model old_int8 --kind analog --gain-set cal --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  52s elapsed  ~993s left
+    20/200 chunks  102s elapsed  ~915s left
+    30/200 chunks  104s elapsed  ~592s left
+    40/200 chunks  154s elapsed  ~614s left
+    50/200 chunks  201s elapsed  ~604s left
+    60/200 chunks  206s elapsed  ~481s left
+    70/200 chunks  253s elapsed  ~470s left
+    80/200 chunks  263s elapsed  ~395s left
+    90/200 chunks  307s elapsed  ~375s left
+    100/200 chunks  352s elapsed  ~352s left
+    110/200 chunks  361s elapsed  ~296s left
+    120/200 chunks  406s elapsed  ~271s left
+    130/200 chunks  451s elapsed  ~243s left
+    140/200 chunks  460s elapsed  ~197s left
+    150/200 chunks  505s elapsed  ~168s left
+    160/200 chunks  521s elapsed  ~130s left
+    170/200 chunks  560s elapsed  ~99s left
+    180/200 chunks  603s elapsed  ~67s left
+    190/200 chunks  615s elapsed  ~32s left
+    200/200 chunks  653s elapsed  ~0s left
+done: old_int8__analog_W8A8__cal n=10000 cpu 1.00 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/old_int8__analog_W8A8__cal
+--- E5b SKIPPED (--skip)
+--- E6: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model run:w8a8_kd_pilot5ep:best --kind analog --gain-set cal --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  53s elapsed  ~1002s left
+    20/200 chunks  102s elapsed  ~922s left
+    30/200 chunks  105s elapsed  ~595s left
+    40/200 chunks  155s elapsed  ~621s left
+    50/200 chunks  203s elapsed  ~610s left
+    60/200 chunks  208s elapsed  ~485s left
+    70/200 chunks  255s elapsed  ~474s left
+    80/200 chunks  263s elapsed  ~394s left
+    90/200 chunks  310s elapsed  ~379s left
+    100/200 chunks  356s elapsed  ~356s left
+    110/200 chunks  363s elapsed  ~297s left
+    120/200 chunks  411s elapsed  ~274s left
+    130/200 chunks  456s elapsed  ~245s left
+    140/200 chunks  462s elapsed  ~198s left
+    150/200 chunks  511s elapsed  ~170s left
+    160/200 chunks  521s elapsed  ~130s left
+    170/200 chunks  563s elapsed  ~99s left
+    180/200 chunks  609s elapsed  ~68s left
+    190/200 chunks  620s elapsed  ~33s left
+    200/200 chunks  657s elapsed  ~0s left
+done: w8a8_kd_pilot5ep_best__analog_W8A8__cal n=10000 cpu 1.01 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/w8a8_kd_pilot5ep_best__analog_W8A8__cal
+--- E6s SKIPPED (--skip)
+--- E1: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind fp32
+already finished: pretrained__fp32 (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__fp32
+--- E2 SKIPPED (--skip)
+--- E3 SKIPPED (--skip)
+--- E4: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind analog --gain-set cal --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  52s elapsed  ~989s left
+    20/200 chunks  102s elapsed  ~917s left
+    30/200 chunks  106s elapsed  ~598s left
+    40/200 chunks  153s elapsed  ~610s left
+    50/200 chunks  201s elapsed  ~604s left
+    60/200 chunks  205s elapsed  ~479s left
+    70/200 chunks  251s elapsed  ~467s left
+    80/200 chunks  260s elapsed  ~390s left
+    90/200 chunks  302s elapsed  ~370s left
+    100/200 chunks  349s elapsed  ~349s left
+    110/200 chunks  360s elapsed  ~294s left
+    120/200 chunks  400s elapsed  ~267s left
+    130/200 chunks  446s elapsed  ~240s left
+    140/200 chunks  455s elapsed  ~195s left
+    150/200 chunks  498s elapsed  ~166s left
+    160/200 chunks  512s elapsed  ~128s left
+    170/200 chunks  551s elapsed  ~97s left
+    180/200 chunks  594s elapsed  ~66s left
+    190/200 chunks  609s elapsed  ~32s left
+    200/200 chunks  641s elapsed  ~0s left
+done: pretrained__analog_W4A4__cal n=10000 cpu 0.99 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__analog_W4A4__cal
+--- E5: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model old_int4 --kind analog --gain-set cal --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  53s elapsed  ~1000s left
+    20/200 chunks  102s elapsed  ~921s left
+    30/200 chunks  105s elapsed  ~597s left
+    40/200 chunks  156s elapsed  ~622s left
+    50/200 chunks  201s elapsed  ~603s left
+    60/200 chunks  207s elapsed  ~484s left
+    70/200 chunks  256s elapsed  ~475s left
+    80/200 chunks  262s elapsed  ~394s left
+    90/200 chunks  308s elapsed  ~377s left
+    100/200 chunks  354s elapsed  ~354s left
+    110/200 chunks  360s elapsed  ~295s left
+    120/200 chunks  409s elapsed  ~272s left
+    130/200 chunks  450s elapsed  ~242s left
+    140/200 chunks  461s elapsed  ~197s left
+    150/200 chunks  507s elapsed  ~169s left
+    160/200 chunks  515s elapsed  ~129s left
+    170/200 chunks  560s elapsed  ~99s left
+    180/200 chunks  604s elapsed  ~67s left
+    190/200 chunks  615s elapsed  ~32s left
+    200/200 chunks  653s elapsed  ~0s left
+done: old_int4__analog_W4A4__cal n=10000 cpu 1.00 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/old_int4__analog_W4A4__cal
+--- E5b SKIPPED (--skip)
+--- E6: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model run:w4a4_kd_pilot10ep_full:best --kind analog --gain-set cal --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  53s elapsed  ~1003s left
+    20/200 chunks  103s elapsed  ~924s left
+    30/200 chunks  105s elapsed  ~597s left
+    40/200 chunks  155s elapsed  ~619s left
+    50/200 chunks  201s elapsed  ~604s left
+    60/200 chunks  207s elapsed  ~483s left
+    70/200 chunks  255s elapsed  ~473s left
+    80/200 chunks  264s elapsed  ~397s left
+    90/200 chunks  307s elapsed  ~376s left
+    100/200 chunks  354s elapsed  ~354s left
+    110/200 chunks  360s elapsed  ~295s left
+    120/200 chunks  406s elapsed  ~271s left
+    130/200 chunks  448s elapsed  ~241s left
+    140/200 chunks  459s elapsed  ~197s left
+    150/200 chunks  503s elapsed  ~168s left
+    160/200 chunks  517s elapsed  ~129s left
+    170/200 chunks  555s elapsed  ~98s left
+    180/200 chunks  598s elapsed  ~66s left
+    190/200 chunks  610s elapsed  ~32s left
+    200/200 chunks  646s elapsed  ~0s left
+done: w4a4_kd_pilot10ep_full_best__analog_W4A4__cal n=10000 cpu 0.99 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/w4a4_kd_pilot10ep_full_best__analog_W4A4__cal
+--- E6s SKIPPED (--skip)
+=== phase A done 2026-10-29T20:46:57Z
+=== phase B (remaining rows) test_th07 2026-10-29T20:46:57Z
+--- E1: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind fp32
+already finished: pretrained__fp32 (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__fp32
+--- E2: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind adc_off --precision W8A8
+  [adc_off] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  36s elapsed  ~680s left
+    20/200 chunks  65s elapsed  ~584s left
+    30/200 chunks  69s elapsed  ~391s left
+    40/200 chunks  97s elapsed  ~387s left
+    50/200 chunks  123s elapsed  ~368s left
+    60/200 chunks  129s elapsed  ~302s left
+    70/200 chunks  155s elapsed  ~288s left
+    80/200 chunks  166s elapsed  ~248s left
+    90/200 chunks  187s elapsed  ~229s left
+    100/200 chunks  211s elapsed  ~211s left
+    110/200 chunks  220s elapsed  ~180s left
+    120/200 chunks  246s elapsed  ~164s left
+    130/200 chunks  267s elapsed  ~144s left
+    140/200 chunks  279s elapsed  ~119s left
+    150/200 chunks  301s elapsed  ~100s left
+    160/200 chunks  318s elapsed  ~79s left
+    170/200 chunks  336s elapsed  ~59s left
+    180/200 chunks  357s elapsed  ~40s left
+    190/200 chunks  370s elapsed  ~19s left
+    200/200 chunks  381s elapsed  ~0s left
+done: pretrained__adcoff_W8A8 n=10000 cpu 0.59 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__adcoff_W8A8
+--- E3: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind analog --gain-set unity --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  51s elapsed  ~961s left
+    20/200 chunks  97s elapsed  ~874s left
+    30/200 chunks  101s elapsed  ~574s left
+    40/200 chunks  148s elapsed  ~590s left
+    50/200 chunks  192s elapsed  ~576s left
+    60/200 chunks  199s elapsed  ~465s left
+    70/200 chunks  241s elapsed  ~448s left
+    80/200 chunks  252s elapsed  ~379s left
+    90/200 chunks  297s elapsed  ~363s left
+    100/200 chunks  336s elapsed  ~336s left
+    110/200 chunks  350s elapsed  ~286s left
+    120/200 chunks  392s elapsed  ~261s left
+    130/200 chunks  431s elapsed  ~232s left
+    140/200 chunks  445s elapsed  ~191s left
+    150/200 chunks  482s elapsed  ~161s left
+    160/200 chunks  501s elapsed  ~125s left
+    170/200 chunks  542s elapsed  ~96s left
+    180/200 chunks  576s elapsed  ~64s left
+    190/200 chunks  597s elapsed  ~31s left
+    200/200 chunks  628s elapsed  ~0s left
+done: pretrained__analog_W8A8__unity n=10000 cpu 0.96 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__analog_W8A8__unity
+--- E4: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind analog --gain-set cal --precision W8A8
+already finished: pretrained__analog_W8A8__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__analog_W8A8__cal
+--- E4b: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind analog --gain-set hist --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  52s elapsed  ~995s left
+    20/200 chunks  101s elapsed  ~913s left
+    30/200 chunks  104s elapsed  ~591s left
+    40/200 chunks  153s elapsed  ~611s left
+    50/200 chunks  199s elapsed  ~598s left
+    60/200 chunks  206s elapsed  ~481s left
+    70/200 chunks  252s elapsed  ~469s left
+    80/200 chunks  260s elapsed  ~391s left
+    90/200 chunks  305s elapsed  ~373s left
+    100/200 chunks  350s elapsed  ~350s left
+    110/200 chunks  361s elapsed  ~296s left
+    120/200 chunks  403s elapsed  ~269s left
+    130/200 chunks  448s elapsed  ~241s left
+    140/200 chunks  460s elapsed  ~197s left
+    150/200 chunks  501s elapsed  ~167s left
+    160/200 chunks  516s elapsed  ~129s left
+    170/200 chunks  557s elapsed  ~98s left
+    180/200 chunks  600s elapsed  ~67s left
+    190/200 chunks  615s elapsed  ~32s left
+    200/200 chunks  648s elapsed  ~0s left
+done: pretrained__analog_W8A8__hist n=10000 cpu 1.00 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__analog_W8A8__hist
+--- E5: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model old_int8 --kind analog --gain-set cal --precision W8A8
+already finished: old_int8__analog_W8A8__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_th07/old_int8__analog_W8A8__cal
+--- E5b: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model old_int8 --kind legacy_adc --precision W8A8
+  [legacy_adc] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  36s elapsed  ~685s left
+    20/200 chunks  67s elapsed  ~602s left
+    30/200 chunks  71s elapsed  ~400s left
+    40/200 chunks  101s elapsed  ~404s left
+    50/200 chunks  129s elapsed  ~386s left
+    60/200 chunks  138s elapsed  ~322s left
+    70/200 chunks  162s elapsed  ~300s left
+    80/200 chunks  174s elapsed  ~261s left
+    90/200 chunks  196s elapsed  ~240s left
+    100/200 chunks  224s elapsed  ~224s left
+    110/200 chunks  236s elapsed  ~193s left
+    120/200 chunks  257s elapsed  ~171s left
+    130/200 chunks  283s elapsed  ~152s left
+    140/200 chunks  298s elapsed  ~128s left
+    150/200 chunks  319s elapsed  ~106s left
+    160/200 chunks  338s elapsed  ~84s left
+    170/200 chunks  352s elapsed  ~62s left
+    180/200 chunks  381s elapsed  ~42s left
+    190/200 chunks  393s elapsed  ~21s left
+    200/200 chunks  405s elapsed  ~0s left
+done: old_int8__legacyadc_W8A8 n=10000 cpu 0.63 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/old_int8__legacyadc_W8A8
+--- E6: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model run:w8a8_kd_pilot5ep:best --kind analog --gain-set cal --precision W8A8
+already finished: w8a8_kd_pilot5ep_best__analog_W8A8__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_th07/w8a8_kd_pilot5ep_best__analog_W8A8__cal
+--- E6s: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model run:w8a8_kd_pilot5ep:final --kind analog --gain-set cal --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  53s elapsed  ~1005s left
+    20/200 chunks  102s elapsed  ~919s left
+    30/200 chunks  106s elapsed  ~601s left
+    40/200 chunks  155s elapsed  ~619s left
+    50/200 chunks  201s elapsed  ~602s left
+    60/200 chunks  208s elapsed  ~484s left
+    70/200 chunks  254s elapsed  ~472s left
+    80/200 chunks  265s elapsed  ~397s left
+    90/200 chunks  309s elapsed  ~378s left
+    100/200 chunks  353s elapsed  ~353s left
+    110/200 chunks  363s elapsed  ~297s left
+    120/200 chunks  406s elapsed  ~271s left
+    130/200 chunks  449s elapsed  ~242s left
+    140/200 chunks  463s elapsed  ~199s left
+    150/200 chunks  505s elapsed  ~168s left
+    160/200 chunks  524s elapsed  ~131s left
+    170/200 chunks  561s elapsed  ~99s left
+    180/200 chunks  604s elapsed  ~67s left
+    190/200 chunks  617s elapsed  ~32s left
+    200/200 chunks  652s elapsed  ~0s left
+done: w8a8_kd_pilot5ep_final__analog_W8A8__cal n=10000 cpu 1.00 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/w8a8_kd_pilot5ep_final__analog_W8A8__cal
+--- E1: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind fp32
+already finished: pretrained__fp32 (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__fp32
+--- E2: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind adc_off --precision W4A4
+  [adc_off] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  36s elapsed  ~681s left
+    20/200 chunks  64s elapsed  ~579s left
+    30/200 chunks  72s elapsed  ~408s left
+    40/200 chunks  99s elapsed  ~398s left
+    50/200 chunks  124s elapsed  ~371s left
+    60/200 chunks  136s elapsed  ~316s left
+    70/200 chunks  161s elapsed  ~299s left
+    80/200 chunks  179s elapsed  ~269s left
+    90/200 chunks  198s elapsed  ~242s left
+    100/200 chunks  221s elapsed  ~221s left
+    110/200 chunks  238s elapsed  ~195s left
+    120/200 chunks  259s elapsed  ~173s left
+    130/200 chunks  279s elapsed  ~150s left
+    140/200 chunks  297s elapsed  ~127s left
+    150/200 chunks  318s elapsed  ~106s left
+    160/200 chunks  341s elapsed  ~85s left
+    170/200 chunks  358s elapsed  ~63s left
+    180/200 chunks  379s elapsed  ~42s left
+    190/200 chunks  397s elapsed  ~21s left
+    200/200 chunks  405s elapsed  ~0s left
+done: pretrained__adcoff_W4A4 n=10000 cpu 0.63 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__adcoff_W4A4
+--- E3: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind analog --gain-set unity --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  50s elapsed  ~946s left
+    20/200 chunks  97s elapsed  ~870s left
+    30/200 chunks  101s elapsed  ~570s left
+    40/200 chunks  146s elapsed  ~585s left
+    50/200 chunks  191s elapsed  ~573s left
+    60/200 chunks  198s elapsed  ~461s left
+    70/200 chunks  241s elapsed  ~447s left
+    80/200 chunks  249s elapsed  ~374s left
+    90/200 chunks  293s elapsed  ~358s left
+    100/200 chunks  336s elapsed  ~336s left
+    110/200 chunks  345s elapsed  ~282s left
+    120/200 chunks  388s elapsed  ~259s left
+    130/200 chunks  428s elapsed  ~231s left
+    140/200 chunks  440s elapsed  ~188s left
+    150/200 chunks  480s elapsed  ~160s left
+    160/200 chunks  496s elapsed  ~124s left
+    170/200 chunks  535s elapsed  ~94s left
+    180/200 chunks  574s elapsed  ~64s left
+    190/200 chunks  586s elapsed  ~31s left
+    200/200 chunks  621s elapsed  ~0s left
+done: pretrained__analog_W4A4__unity n=10000 cpu 0.95 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__analog_W4A4__unity
+--- E4: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model pretrained --kind analog --gain-set cal --precision W4A4
+already finished: pretrained__analog_W4A4__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_th07/pretrained__analog_W4A4__cal
+--- E5: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model old_int4 --kind analog --gain-set cal --precision W4A4
+already finished: old_int4__analog_W4A4__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_th07/old_int4__analog_W4A4__cal
+--- E5b: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model old_int4 --kind legacy_adc --precision W4A4
+  [legacy_adc] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  34s elapsed  ~640s left
+    20/200 chunks  60s elapsed  ~544s left
+    30/200 chunks  66s elapsed  ~371s left
+    40/200 chunks  91s elapsed  ~364s left
+    50/200 chunks  115s elapsed  ~345s left
+    60/200 chunks  123s elapsed  ~288s left
+    70/200 chunks  145s elapsed  ~269s left
+    80/200 chunks  155s elapsed  ~233s left
+    90/200 chunks  177s elapsed  ~216s left
+    100/200 chunks  197s elapsed  ~197s left
+    110/200 chunks  209s elapsed  ~171s left
+    120/200 chunks  230s elapsed  ~153s left
+    130/200 chunks  249s elapsed  ~134s left
+    140/200 chunks  261s elapsed  ~112s left
+    150/200 chunks  283s elapsed  ~94s left
+    160/200 chunks  296s elapsed  ~74s left
+    170/200 chunks  316s elapsed  ~56s left
+    180/200 chunks  333s elapsed  ~37s left
+    190/200 chunks  348s elapsed  ~18s left
+    200/200 chunks  361s elapsed  ~0s left
+done: old_int4__legacyadc_W4A4 n=10000 cpu 0.56 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/old_int4__legacyadc_W4A4
+--- E6: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model run:w4a4_kd_pilot10ep_full:best --kind analog --gain-set cal --precision W4A4
+already finished: w4a4_kd_pilot10ep_full_best__analog_W4A4__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_th07/w4a4_kd_pilot10ep_full_best__analog_W4A4__cal
+--- E6s: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_th07 --workers 16 --final --model run:w4a4_kd_pilot10ep_full:final --kind analog --gain-set cal --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  53s elapsed  ~1002s left
+    20/200 chunks  103s elapsed  ~925s left
+    30/200 chunks  105s elapsed  ~594s left
+    40/200 chunks  155s elapsed  ~620s left
+    50/200 chunks  203s elapsed  ~609s left
+    60/200 chunks  207s elapsed  ~483s left
+    70/200 chunks  257s elapsed  ~476s left
+    80/200 chunks  263s elapsed  ~394s left
+    90/200 chunks  309s elapsed  ~377s left
+    100/200 chunks  356s elapsed  ~356s left
+    110/200 chunks  364s elapsed  ~298s left
+    120/200 chunks  409s elapsed  ~273s left
+    130/200 chunks  455s elapsed  ~245s left
+    140/200 chunks  463s elapsed  ~199s left
+    150/200 chunks  509s elapsed  ~170s left
+    160/200 chunks  521s elapsed  ~130s left
+    170/200 chunks  563s elapsed  ~99s left
+    180/200 chunks  609s elapsed  ~68s left
+    190/200 chunks  620s elapsed  ~33s left
+    200/200 chunks  655s elapsed  ~0s left
+done: w4a4_kd_pilot10ep_full_final__analog_W4A4__cal n=10000 cpu 1.01 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/w4a4_kd_pilot10ep_full_final__analog_W4A4__cal
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  53s elapsed  ~1005s left
+    20/200 chunks  103s elapsed  ~923s left
+    30/200 chunks  106s elapsed  ~599s left
+    40/200 chunks  155s elapsed  ~620s left
+    50/200 chunks  202s elapsed  ~606s left
+    60/200 chunks  208s elapsed  ~485s left
+    70/200 chunks  256s elapsed  ~475s left
+    80/200 chunks  263s elapsed  ~394s left
+    90/200 chunks  309s elapsed  ~378s left
+    100/200 chunks  355s elapsed  ~355s left
+    110/200 chunks  365s elapsed  ~298s left
+    120/200 chunks  409s elapsed  ~273s left
+    130/200 chunks  452s elapsed  ~243s left
+    140/200 chunks  464s elapsed  ~199s left
+    150/200 chunks  510s elapsed  ~170s left
+    160/200 chunks  522s elapsed  ~130s left
+    170/200 chunks  564s elapsed  ~100s left
+    180/200 chunks  607s elapsed  ~67s left
+    190/200 chunks  621s elapsed  ~33s left
+    200/200 chunks  657s elapsed  ~0s left
+done: w4a4_kd_pilot10ep_best__analog_W4A4__cal n=10000 cpu 1.01 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_th07/w4a4_kd_pilot10ep_best__analog_W4A4__cal
+=== phase B (remaining rows) test_top 2026-10-29T22:19:20Z
+--- E1: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind fp32
+already finished: pretrained__fp32 (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__fp32
+--- E2: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind adc_off --precision W8A8
+  [adc_off] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  35s elapsed  ~659s left
+    20/200 chunks  64s elapsed  ~572s left
+    30/200 chunks  68s elapsed  ~383s left
+    40/200 chunks  96s elapsed  ~383s left
+    50/200 chunks  121s elapsed  ~364s left
+    60/200 chunks  129s elapsed  ~302s left
+    70/200 chunks  155s elapsed  ~288s left
+    80/200 chunks  163s elapsed  ~245s left
+    90/200 chunks  188s elapsed  ~230s left
+    100/200 chunks  214s elapsed  ~214s left
+    110/200 chunks  221s elapsed  ~180s left
+    120/200 chunks  244s elapsed  ~163s left
+    130/200 chunks  259s elapsed  ~139s left
+    140/200 chunks  274s elapsed  ~117s left
+    150/200 chunks  298s elapsed  ~99s left
+    160/200 chunks  310s elapsed  ~78s left
+    170/200 chunks  329s elapsed  ~58s left
+    180/200 chunks  346s elapsed  ~38s left
+    190/200 chunks  362s elapsed  ~19s left
+    200/200 chunks  373s elapsed  ~0s left
+done: pretrained__adcoff_W8A8 n=10000 cpu 0.58 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__adcoff_W8A8
+--- E3: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind analog --gain-set unity --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  50s elapsed  ~943s left
+    20/200 chunks  97s elapsed  ~869s left
+    30/200 chunks  99s elapsed  ~563s left
+    40/200 chunks  146s elapsed  ~585s left
+    50/200 chunks  191s elapsed  ~572s left
+    60/200 chunks  198s elapsed  ~462s left
+    70/200 chunks  240s elapsed  ~446s left
+    80/200 chunks  254s elapsed  ~381s left
+    90/200 chunks  293s elapsed  ~358s left
+    100/200 chunks  335s elapsed  ~335s left
+    110/200 chunks  349s elapsed  ~286s left
+    120/200 chunks  387s elapsed  ~258s left
+    130/200 chunks  430s elapsed  ~232s left
+    140/200 chunks  440s elapsed  ~188s left
+    150/200 chunks  481s elapsed  ~160s left
+    160/200 chunks  504s elapsed  ~126s left
+    170/200 chunks  535s elapsed  ~94s left
+    180/200 chunks  576s elapsed  ~64s left
+    190/200 chunks  590s elapsed  ~31s left
+    200/200 chunks  621s elapsed  ~0s left
+done: pretrained__analog_W8A8__unity n=10000 cpu 0.96 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__analog_W8A8__unity
+--- E4: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind analog --gain-set cal --precision W8A8
+already finished: pretrained__analog_W8A8__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__analog_W8A8__cal
+--- E4b: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind analog --gain-set hist --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  53s elapsed  ~1001s left
+    20/200 chunks  102s elapsed  ~920s left
+    30/200 chunks  106s elapsed  ~598s left
+    40/200 chunks  154s elapsed  ~618s left
+    50/200 chunks  200s elapsed  ~600s left
+    60/200 chunks  207s elapsed  ~484s left
+    70/200 chunks  255s elapsed  ~474s left
+    80/200 chunks  263s elapsed  ~394s left
+    90/200 chunks  308s elapsed  ~376s left
+    100/200 chunks  354s elapsed  ~354s left
+    110/200 chunks  364s elapsed  ~298s left
+    120/200 chunks  409s elapsed  ~272s left
+    130/200 chunks  449s elapsed  ~242s left
+    140/200 chunks  463s elapsed  ~198s left
+    150/200 chunks  509s elapsed  ~170s left
+    160/200 chunks  524s elapsed  ~131s left
+    170/200 chunks  564s elapsed  ~99s left
+    180/200 chunks  607s elapsed  ~67s left
+    190/200 chunks  620s elapsed  ~33s left
+    200/200 chunks  656s elapsed  ~0s left
+done: pretrained__analog_W8A8__hist n=10000 cpu 1.01 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__analog_W8A8__hist
+--- E5: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model old_int8 --kind analog --gain-set cal --precision W8A8
+already finished: old_int8__analog_W8A8__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_top/old_int8__analog_W8A8__cal
+--- E5b: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model old_int8 --kind legacy_adc --precision W8A8
+  [legacy_adc] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  36s elapsed  ~686s left
+    20/200 chunks  66s elapsed  ~590s left
+    30/200 chunks  71s elapsed  ~403s left
+    40/200 chunks  98s elapsed  ~390s left
+    50/200 chunks  127s elapsed  ~380s left
+    60/200 chunks  135s elapsed  ~314s left
+    70/200 chunks  158s elapsed  ~294s left
+    80/200 chunks  175s elapsed  ~262s left
+    90/200 chunks  196s elapsed  ~239s left
+    100/200 chunks  219s elapsed  ~219s left
+    110/200 chunks  235s elapsed  ~192s left
+    120/200 chunks  253s elapsed  ~169s left
+    130/200 chunks  281s elapsed  ~151s left
+    140/200 chunks  291s elapsed  ~125s left
+    150/200 chunks  314s elapsed  ~105s left
+    160/200 chunks  340s elapsed  ~85s left
+    170/200 chunks  350s elapsed  ~62s left
+    180/200 chunks  375s elapsed  ~42s left
+    190/200 chunks  388s elapsed  ~20s left
+    200/200 chunks  399s elapsed  ~0s left
+done: old_int8__legacyadc_W8A8 n=10000 cpu 0.62 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/old_int8__legacyadc_W8A8
+--- E6: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model run:w8a8_kd_pilot5ep:best --kind analog --gain-set cal --precision W8A8
+already finished: w8a8_kd_pilot5ep_best__analog_W8A8__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_top/w8a8_kd_pilot5ep_best__analog_W8A8__cal
+--- E6s: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model run:w8a8_kd_pilot5ep:final --kind analog --gain-set cal --precision W8A8
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  52s elapsed  ~983s left
+    20/200 chunks  101s elapsed  ~912s left
+    30/200 chunks  104s elapsed  ~589s left
+    40/200 chunks  153s elapsed  ~612s left
+    50/200 chunks  200s elapsed  ~601s left
+    60/200 chunks  206s elapsed  ~480s left
+    70/200 chunks  254s elapsed  ~472s left
+    80/200 chunks  262s elapsed  ~393s left
+    90/200 chunks  306s elapsed  ~373s left
+    100/200 chunks  352s elapsed  ~352s left
+    110/200 chunks  363s elapsed  ~297s left
+    120/200 chunks  405s elapsed  ~270s left
+    130/200 chunks  450s elapsed  ~242s left
+    140/200 chunks  460s elapsed  ~197s left
+    150/200 chunks  505s elapsed  ~168s left
+    160/200 chunks  522s elapsed  ~130s left
+    170/200 chunks  559s elapsed  ~99s left
+    180/200 chunks  603s elapsed  ~67s left
+    190/200 chunks  621s elapsed  ~33s left
+    200/200 chunks  653s elapsed  ~0s left
+done: w8a8_kd_pilot5ep_final__analog_W8A8__cal n=10000 cpu 1.00 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/w8a8_kd_pilot5ep_final__analog_W8A8__cal
+--- E1: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind fp32
+already finished: pretrained__fp32 (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__fp32
+--- E2: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind adc_off --precision W4A4
+  [adc_off] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  36s elapsed  ~683s left
+    20/200 chunks  67s elapsed  ~601s left
+    30/200 chunks  70s elapsed  ~398s left
+    40/200 chunks  99s elapsed  ~397s left
+    50/200 chunks  127s elapsed  ~382s left
+    60/200 chunks  135s elapsed  ~316s left
+    70/200 chunks  162s elapsed  ~301s left
+    80/200 chunks  175s elapsed  ~263s left
+    90/200 chunks  197s elapsed  ~241s left
+    100/200 chunks  224s elapsed  ~224s left
+    110/200 chunks  239s elapsed  ~195s left
+    120/200 chunks  259s elapsed  ~172s left
+    130/200 chunks  286s elapsed  ~154s left
+    140/200 chunks  299s elapsed  ~128s left
+    150/200 chunks  322s elapsed  ~107s left
+    160/200 chunks  344s elapsed  ~86s left
+    170/200 chunks  357s elapsed  ~63s left
+    180/200 chunks  381s elapsed  ~42s left
+    190/200 chunks  393s elapsed  ~21s left
+    200/200 chunks  405s elapsed  ~0s left
+done: pretrained__adcoff_W4A4 n=10000 cpu 0.63 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__adcoff_W4A4
+--- E3: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind analog --gain-set unity --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  49s elapsed  ~937s left
+    20/200 chunks  96s elapsed  ~862s left
+    30/200 chunks  99s elapsed  ~559s left
+    40/200 chunks  145s elapsed  ~580s left
+    50/200 chunks  189s elapsed  ~568s left
+    60/200 chunks  196s elapsed  ~456s left
+    70/200 chunks  239s elapsed  ~444s left
+    80/200 chunks  245s elapsed  ~368s left
+    90/200 chunks  290s elapsed  ~354s left
+    100/200 chunks  331s elapsed  ~331s left
+    110/200 chunks  342s elapsed  ~280s left
+    120/200 chunks  385s elapsed  ~257s left
+    130/200 chunks  425s elapsed  ~229s left
+    140/200 chunks  436s elapsed  ~187s left
+    150/200 chunks  477s elapsed  ~159s left
+    160/200 chunks  489s elapsed  ~122s left
+    170/200 chunks  530s elapsed  ~94s left
+    180/200 chunks  567s elapsed  ~63s left
+    190/200 chunks  582s elapsed  ~31s left
+    200/200 chunks  616s elapsed  ~0s left
+done: pretrained__analog_W4A4__unity n=10000 cpu 0.94 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__analog_W4A4__unity
+--- E4: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model pretrained --kind analog --gain-set cal --precision W4A4
+already finished: pretrained__analog_W4A4__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_top/pretrained__analog_W4A4__cal
+--- E5: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model old_int4 --kind analog --gain-set cal --precision W4A4
+already finished: old_int4__analog_W4A4__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_top/old_int4__analog_W4A4__cal
+--- E5b: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model old_int4 --kind legacy_adc --precision W4A4
+  [legacy_adc] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  36s elapsed  ~687s left
+    20/200 chunks  64s elapsed  ~574s left
+    30/200 chunks  69s elapsed  ~393s left
+    40/200 chunks  96s elapsed  ~385s left
+    50/200 chunks  123s elapsed  ~368s left
+    60/200 chunks  131s elapsed  ~305s left
+    70/200 chunks  154s elapsed  ~286s left
+    80/200 chunks  167s elapsed  ~251s left
+    90/200 chunks  190s elapsed  ~232s left
+    100/200 chunks  214s elapsed  ~214s left
+    110/200 chunks  225s elapsed  ~184s left
+    120/200 chunks  249s elapsed  ~166s left
+    130/200 chunks  273s elapsed  ~147s left
+    140/200 chunks  282s elapsed  ~121s left
+    150/200 chunks  306s elapsed  ~102s left
+    160/200 chunks  326s elapsed  ~82s left
+    170/200 chunks  338s elapsed  ~60s left
+    180/200 chunks  363s elapsed  ~40s left
+    190/200 chunks  375s elapsed  ~20s left
+    200/200 chunks  388s elapsed  ~0s left
+done: old_int4__legacyadc_W4A4 n=10000 cpu 0.60 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/old_int4__legacyadc_W4A4
+--- E6: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model run:w4a4_kd_pilot10ep_full:best --kind analog --gain-set cal --precision W4A4
+already finished: w4a4_kd_pilot10ep_full_best__analog_W4A4__cal (left untouched) -> /media/user/DATA 1/cim_qat_work/eval/test_top/w4a4_kd_pilot10ep_full_best__analog_W4A4__cal
+--- E6s: /home/user/anaconda3/envs/cim_soc_qat/bin/python "/media/user/DATA 1/cim_qat_work/code/CIM-SOC-QAT-v2.8/qat_evaluate.py" sim --paths configs/paths.json --split test_top --workers 16 --final --model run:w4a4_kd_pilot10ep_full:final --kind analog --gain-set cal --precision W4A4
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  53s elapsed  ~1001s left
+    20/200 chunks  103s elapsed  ~923s left
+    30/200 chunks  105s elapsed  ~596s left
+    40/200 chunks  154s elapsed  ~616s left
+    50/200 chunks  203s elapsed  ~609s left
+    60/200 chunks  208s elapsed  ~485s left
+    70/200 chunks  256s elapsed  ~475s left
+    80/200 chunks  262s elapsed  ~393s left
+    90/200 chunks  308s elapsed  ~376s left
+    100/200 chunks  355s elapsed  ~355s left
+    110/200 chunks  364s elapsed  ~298s left
+    120/200 chunks  408s elapsed  ~272s left
+    130/200 chunks  454s elapsed  ~245s left
+    140/200 chunks  465s elapsed  ~199s left
+    150/200 chunks  508s elapsed  ~169s left
+    160/200 chunks  524s elapsed  ~131s left
+    170/200 chunks  562s elapsed  ~99s left
+    180/200 chunks  606s elapsed  ~67s left
+    190/200 chunks  620s elapsed  ~33s left
+    200/200 chunks  655s elapsed  ~0s left
+done: w4a4_kd_pilot10ep_full_final__analog_W4A4__cal n=10000 cpu 1.01 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/w4a4_kd_pilot10ep_full_final__analog_W4A4__cal
+  [analog] 200/200 chunks to run on 16 workers (10000 images)
+    10/200 chunks  53s elapsed  ~1005s left
+    20/200 chunks  103s elapsed  ~923s left
+    30/200 chunks  106s elapsed  ~599s left
+    40/200 chunks  154s elapsed  ~616s left
+    50/200 chunks  203s elapsed  ~609s left
+    60/200 chunks  208s elapsed  ~486s left
+    70/200 chunks  255s elapsed  ~473s left
+    80/200 chunks  266s elapsed  ~399s left
+    90/200 chunks  308s elapsed  ~376s left
+    100/200 chunks  354s elapsed  ~354s left
+    110/200 chunks  364s elapsed  ~298s left
+    120/200 chunks  407s elapsed  ~271s left
+    130/200 chunks  453s elapsed  ~244s left
+    140/200 chunks  462s elapsed  ~198s left
+    150/200 chunks  507s elapsed  ~169s left
+    160/200 chunks  526s elapsed  ~131s left
+    170/200 chunks  560s elapsed  ~99s left
+    180/200 chunks  606s elapsed  ~67s left
+    190/200 chunks  623s elapsed  ~33s left
+    200/200 chunks  653s elapsed  ~0s left
+done: w4a4_kd_pilot10ep_best__analog_W4A4__cal n=10000 cpu 1.01 s/img -> /media/user/DATA 1/cim_qat_work/eval/test_top/w4a4_kd_pilot10ep_best__analog_W4A4__cal
+=== phase B done 2026-10-29T23:51:51Z
+end 2026-10-29T23:51:51Z

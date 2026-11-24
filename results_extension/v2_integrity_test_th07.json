@@ -1,0 +1,11 @@
+{
+ "classes_modal_match_imagefolder_lexicographic": 12,
+ "classes_modal_match_int_folder": 960,
+ "n_images": 10000,
+ "note": "data-integrity check only; accuracy deliberately not reported here",
+ "ok": true,
+ "pass_rule": "int-folder >= 700 of 1000 and lexicographic <= 50",
+ "split": "test_th07",
+ "test_manifest_sha256": "baf8d5d4feab0a63c914b955f29443b1165fd4bf44371749776da5a7562a0f4f",
+ "time_utc": "2026-10-29T18:20:02+00:00"
+}

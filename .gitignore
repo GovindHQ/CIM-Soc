@@ -16,6 +16,24 @@ cim_sim/simulator.docx
 # Allow Excel files
 !*.xlsx
 !*.xls
+# ...but never Excel lock/owner files
+~$*
+
+# (Oct 2026) documentation, configuration templates and bundled data that the
+# code needs. Local checkpoints.json is NOT tracked (machine-specific paths).
+!*.md
+!requirements.txt
+!configs/*.template.json
+!cim_exp/data/*.txt
+
+# Never track data, results, checkpoints, virtual environments
+/data/
+/results/
+/checkpoints/
+/.venv/
+*.pth
+*.npy
+*.npz
 
 # Ignore Python caches explicitly
 __pycache__/

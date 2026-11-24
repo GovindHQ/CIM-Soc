@@ -1,0 +1,1097 @@
+{
+ "n_fail": 0,
+ "n_warn": 6,
+ "results": [
+  {
+   "id": "S1.cal",
+   "msg": "manifest_cal.csv sha256 b4f2567a9b96 == splits.json",
+   "status": "PASS"
+  },
+  {
+   "id": "S1.calcheck",
+   "msg": "manifest_calcheck.csv sha256 cd0cc98e2aa5 == splits.json",
+   "status": "PASS"
+  },
+  {
+   "id": "S1.test",
+   "msg": "manifest_test.csv sha256 28d391c95b4a == splits.json",
+   "status": "PASS"
+  },
+  {
+   "id": "S1.train",
+   "msg": "manifest_train.csv sha256 5e7afa213d24 == splits.json",
+   "status": "PASS"
+  },
+  {
+   "id": "S1.val",
+   "msg": "manifest_val.csv sha256 dd70954617a1 == splits.json",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.within.cal",
+   "msg": "no duplicate manifest entries in cal",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.within.calcheck",
+   "msg": "no duplicate manifest entries in calcheck",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.within.test",
+   "msg": "no duplicate manifest entries in test",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.within.train",
+   "msg": "no duplicate manifest entries in train",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.within.val",
+   "msg": "no duplicate manifest entries in val",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.cal|calcheck",
+   "msg": "no manifest path shared by cal and calcheck (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.cal|test",
+   "msg": "no manifest path shared by cal and test (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.cal|train",
+   "msg": "no manifest path shared by cal and train (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.cal|val",
+   "msg": "no manifest path shared by cal and val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.calcheck|test",
+   "msg": "no manifest path shared by calcheck and test (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.calcheck|train",
+   "msg": "no manifest path shared by calcheck and train (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.calcheck|val",
+   "msg": "no manifest path shared by calcheck and val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.test|train",
+   "msg": "no manifest path shared by test and train (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.test|val",
+   "msg": "no manifest path shared by test and val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S2.train|val",
+   "msg": "no manifest path shared by train and val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.within.cal",
+   "msg": "no two cal rows resolve to the same real file (symlinks followed)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.within.calcheck",
+   "msg": "no two calcheck rows resolve to the same real file (symlinks followed)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.within.test",
+   "msg": "no two test rows resolve to the same real file (symlinks followed)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.within.train",
+   "msg": "no two train rows resolve to the same real file (symlinks followed)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.within.val",
+   "msg": "no two val rows resolve to the same real file (symlinks followed)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.cal|calcheck",
+   "msg": "no real file shared by cal and calcheck (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.cal|test",
+   "msg": "no real file shared by cal and test (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.cal|train",
+   "msg": "no real file shared by cal and train (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.cal|val",
+   "msg": "no real file shared by cal and val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.calcheck|test",
+   "msg": "no real file shared by calcheck and test (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.calcheck|train",
+   "msg": "no real file shared by calcheck and train (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.calcheck|val",
+   "msg": "no real file shared by calcheck and val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.test|train",
+   "msg": "no real file shared by test and train (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.test|val",
+   "msg": "no real file shared by test and val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S3.train|val",
+   "msg": "no real file shared by train and val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.len.cal",
+   "msg": "hashes_cal.csv covers every cal row",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.len.calcheck",
+   "msg": "hashes_calcheck.csv covers every calcheck row",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.len.train",
+   "msg": "hashes_train.csv covers every train row",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.len.val",
+   "msg": "hashes_val.csv covers every val row",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.len.test",
+   "msg": "hashes_test.csv covers every test row",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.cal|calcheck",
+   "msg": "no identical file content between cal|calcheck (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.cal|train",
+   "msg": "no identical file content between cal|train (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.calcheck|train",
+   "msg": "no identical file content between calcheck|train (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.cal|val",
+   "msg": "no identical file content between cal|val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.cal|test",
+   "msg": "no identical file content between cal|test (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.calcheck|val",
+   "msg": "no identical file content between calcheck|val (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.calcheck|test",
+   "msg": "no identical file content between calcheck|test (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.val|test",
+   "msg": "no identical file content between val|test (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.within.cal",
+   "msg": "no identical content inside cal",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.within.calcheck",
+   "msg": "no identical content inside calcheck",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.info.train|val",
+   "msg": "identical content train|val: 797",
+   "status": "WARN"
+  },
+  {
+   "id": "S4.info.train|test",
+   "msg": "identical content train|test: 0",
+   "status": "PASS"
+  },
+  {
+   "id": "S4.info.within.val",
+   "msg": "29 identical-content repeats inside val",
+   "status": "WARN"
+  },
+  {
+   "id": "S4.info.within.train",
+   "msg": "5909 identical-content repeats inside train",
+   "status": "WARN"
+  },
+  {
+   "id": "S4.errors",
+   "msg": "no unreadable files {'cal': 0, 'calcheck': 0, 'train': 0, 'val': 0, 'test': 0}",
+   "status": "PASS"
+  },
+  {
+   "id": "S5.identity",
+   "msg": "TRAIN 1,278,941 = on disk 1,281,167 - CAL 2,000 - CALCHECK 200 - excluded duplicates 26",
+   "status": "PASS"
+  },
+  {
+   "id": "S5.sizes",
+   "msg": "CAL 2000 / CALCHECK 200 / VAL 50000 == 2000 / 200 / 50000",
+   "status": "PASS"
+  },
+  {
+   "id": "S5.recount.train",
+   "msg": "train files on disk now 1,281,167 == at prepare 1,281,167",
+   "status": "PASS"
+  },
+  {
+   "id": "S5.recount.val",
+   "msg": "val files on disk now 50,000 == manifest 50,000",
+   "status": "PASS"
+  },
+  {
+   "id": "S6.calcheck",
+   "msg": "CALCHECK: 200 distinct classes",
+   "status": "PASS"
+  },
+  {
+   "id": "S6.cal",
+   "msg": "CAL: 2 per class (spot-checked every 97th class)",
+   "status": "PASS"
+  },
+  {
+   "id": "M1",
+   "msg": "TEST label == int(folder name) for every image",
+   "status": "PASS"
+  },
+  {
+   "id": "M2",
+   "msg": "TEST wnid == synsets[label] (ImageNet-2012 index order)",
+   "status": "PASS"
+  },
+  {
+   "id": "M3",
+   "msg": "VAL wnid == synsets[label]",
+   "status": "PASS"
+  },
+  {
+   "id": "M4",
+   "msg": "TEST and VAL cover the same 1000 class indices",
+   "status": "PASS"
+  },
+  {
+   "id": "M5",
+   "msg": "TEST has 10000 images (expected 10,000)",
+   "status": "PASS"
+  },
+  {
+   "id": "M6",
+   "msg": "empirical mapping check: 958/1000 classes (lexicographic alternative 13)",
+   "status": "PASS"
+  },
+  {
+   "id": "L1.qat_w4a4_ce_pilot.json",
+   "msg": "training config refers to no TEST/ImageNetV2 data []",
+   "status": "PASS"
+  },
+  {
+   "id": "L1.qat_w4a4_kd.json",
+   "msg": "training config refers to no TEST/ImageNetV2 data []",
+   "status": "PASS"
+  },
+  {
+   "id": "L1.qat_w4a4_kd_full.json",
+   "msg": "training config refers to no TEST/ImageNetV2 data []",
+   "status": "PASS"
+  },
+  {
+   "id": "L1.qat_w8a8_kd.json",
+   "msg": "training config refers to no TEST/ImageNetV2 data []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep.config",
+   "msg": "run config refers to no TEST/ImageNetV2 data []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep.evals",
+   "msg": "all 6 selection/early-stopping evaluations used VAL (manifest dd70954617a1) []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep.patience",
+   "msg": "early-stopping patience 3 == pre-declared 3 (QAT_DESIGN.md \u00a70.2 #3)",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep.summary",
+   "msg": "checkpoint selection split = val, test_split_used = False",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep.log",
+   "msg": "train.log mentions no ImageNetV2 path []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep.spot",
+   "msg": "12 simulator spot-check jobs used the fixed VAL spot images (0 differ)",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_full.config",
+   "msg": "run config refers to no TEST/ImageNetV2 data []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_full.evals",
+   "msg": "all 11 selection/early-stopping evaluations used VAL (manifest dd70954617a1) []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_full.patience",
+   "msg": "early-stopping patience 10 == pre-declared 10 (QAT_DESIGN.md \u00a70.2 #3)",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_full.summary",
+   "msg": "checkpoint selection split = val, test_split_used = False",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_full.log",
+   "msg": "train.log mentions no ImageNetV2 path []",
+   "status": "PASS"
+  },
+  {
+   "id": "L8.w4a4_kd_pilot10ep_full.declared",
+   "msg": "fork w4a4_kd_pilot10ep_full <- w4a4_kd_pilot10ep is the declared D2 fork (w4a4_kd_pilot10ep)",
+   "status": "PASS"
+  },
+  {
+   "id": "L8.w4a4_kd_pilot10ep_full.source",
+   "msg": "source w4a4_kd_pilot10ep early-stopped and its state file is unchanged since the fork",
+   "status": "PASS"
+  },
+  {
+   "id": "L8.w4a4_kd_pilot10ep_full.changes",
+   "msg": "only ['early_stopping_patience', 'run_name'] changed; early stopping off (patience 10 >= 10 epochs)",
+   "status": "PASS"
+  },
+  {
+   "id": "L8.w4a4_kd_pilot10ep_full.history",
+   "msg": "the fork's first 6 evaluations are byte-identical to the source's",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_full.spot",
+   "msg": "22 simulator spot-check jobs used the fixed VAL spot images (0 differ)",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_smoke.config",
+   "msg": "run config refers to no TEST/ImageNetV2 data []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_smoke.evals",
+   "msg": "smoke/throughput run: no selection evaluations",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_smoke.log",
+   "msg": "train.log mentions no ImageNetV2 path []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w4a4_kd_pilot10ep_smoke.spot",
+   "msg": "2 simulator spot-check jobs used the fixed VAL spot images (0 differ)",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep.config",
+   "msg": "run config refers to no TEST/ImageNetV2 data []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep.evals",
+   "msg": "all 6 selection/early-stopping evaluations used VAL (manifest dd70954617a1) []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep.patience",
+   "msg": "early-stopping patience 5 == pre-declared 5 (QAT_DESIGN.md \u00a70.2 #3)",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep.summary",
+   "msg": "checkpoint selection split = val, test_split_used = False",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep.log",
+   "msg": "train.log mentions no ImageNetV2 path []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep.spot",
+   "msg": "12 simulator spot-check jobs used the fixed VAL spot images (0 differ)",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep_smoke.config",
+   "msg": "run config refers to no TEST/ImageNetV2 data []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep_smoke.evals",
+   "msg": "smoke/throughput run: no selection evaluations",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep_smoke.log",
+   "msg": "train.log mentions no ImageNetV2 path []",
+   "status": "PASS"
+  },
+  {
+   "id": "L2.w8a8_kd_pilot5ep_smoke.spot",
+   "msg": "2 simulator spot-check jobs used the fixed VAL spot images (0 differ)",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.W4A4.report",
+   "msg": "calibration used the CAL and CALCHECK manifests only",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.W4A4.frozen",
+   "msg": "frozen gains {'av': 3.82, 'qk': 11.28, 'qkv': 29.05} derived from CAL (level p99.99)",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.w4a4_kd_pilot10ep.gains",
+   "msg": "run w4a4_kd_pilot10ep trained with the current frozen W4A4 gains (file unchanged)",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.w4a4_kd_pilot10ep_full.gains",
+   "msg": "run w4a4_kd_pilot10ep_full trained with the current frozen W4A4 gains (file unchanged)",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.w4a4_kd_pilot10ep_smoke.gains",
+   "msg": "run w4a4_kd_pilot10ep_smoke trained with the current frozen W4A4 gains (file unchanged)",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.W4A4.calcheck",
+   "msg": "5 CAL-check simulator jobs ran on exactly the CALCHECK images",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.W8A8.report",
+   "msg": "calibration used the CAL and CALCHECK manifests only",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.W8A8.frozen",
+   "msg": "frozen gains {'av': 2.72, 'qk': 8.75, 'qkv': 22.92} derived from CAL (level p99.99)",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.w8a8_kd_pilot5ep.gains",
+   "msg": "run w8a8_kd_pilot5ep trained with the current frozen W8A8 gains (file unchanged)",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.w8a8_kd_pilot5ep_smoke.gains",
+   "msg": "run w8a8_kd_pilot5ep_smoke trained with the current frozen W8A8 gains (file unchanged)",
+   "status": "PASS"
+  },
+  {
+   "id": "L3.W8A8.calcheck",
+   "msg": "5 CAL-check simulator jobs ran on exactly the CALCHECK images",
+   "status": "PASS"
+  },
+  {
+   "id": "L4.log",
+   "msg": "data access log has 163 entries",
+   "status": "PASS"
+  },
+  {
+   "id": "L4.test_purposes",
+   "msg": "TEST read 19 times, only for final_eval/v2_integrity/prepare/audit []",
+   "status": "PASS"
+  },
+  {
+   "id": "L4.trainlike",
+   "msg": "no training/calibration/check process read TEST",
+   "status": "PASS"
+  },
+  {
+   "id": "L5.after_first_test",
+   "msg": "no training run started / gains frozen after the first TEST read (2026-10-28T23:44:41+00:00) []",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.old_int4__analog_W4A4__cal",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.old_int4__legacyadc_W4A4",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.old_int8__analog_W8A8__cal",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.old_int8__legacyadc_W8A8",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.pretrained__adcoff_W4A4",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.pretrained__adcoff_W8A8",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.pretrained__analog_W4A4__cal",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.pretrained__analog_W4A4__unity",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.pretrained__analog_W8A8__cal",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.pretrained__analog_W8A8__hist",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.pretrained__analog_W8A8__unity",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.pretrained__fp32",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w4a4_kd_pilot10ep_best__analog_W4A4__cal",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w4a4_kd_pilot10ep_best__analog_W4A4__cal.order",
+   "msg": "run w4a4_kd_pilot10ep finished (2026-10-27T00:09:59+00:00) before its TEST evaluation (2026-10-29T06:18:33+00:00)",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w4a4_kd_pilot10ep_full_best__analog_W4A4__cal",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w4a4_kd_pilot10ep_full_best__analog_W4A4__cal.order",
+   "msg": "run w4a4_kd_pilot10ep_full finished (2026-10-28T17:32:49+00:00) before its TEST evaluation (2026-10-29T05:54:49+00:00)",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w4a4_kd_pilot10ep_full_final__analog_W4A4__cal",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w4a4_kd_pilot10ep_full_final__analog_W4A4__cal.order",
+   "msg": "run w4a4_kd_pilot10ep_full finished (2026-10-28T17:32:49+00:00) before its TEST evaluation (2026-10-29T06:05:19+00:00)",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w8a8_kd_pilot5ep_best__analog_W8A8__cal",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w8a8_kd_pilot5ep_best__analog_W8A8__cal.order",
+   "msg": "run w8a8_kd_pilot5ep finished (2026-10-26T23:20:21+00:00) before its TEST evaluation (2026-10-29T00:43:49+00:00)",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w8a8_kd_pilot5ep_final__analog_W8A8__cal",
+   "msg": "TEST evaluation was a --final, full-set evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "L6.w8a8_kd_pilot5ep_final__analog_W8A8__cal.order",
+   "msg": "run w8a8_kd_pilot5ep finished (2026-10-26T23:20:21+00:00) before its TEST evaluation (2026-10-29T00:54:46+00:00)",
+   "status": "PASS"
+  },
+  {
+   "id": "L9.d2.rule",
+   "msg": "D2 selected w4a4_kd_pilot10ep_full by the declared rule",
+   "status": "PASS"
+  },
+  {
+   "id": "L9.d2.before_test",
+   "msg": "D2 recorded 2026-10-28T18:29:22+00:00 before the first TEST read (2026-10-28T23:44:41+00:00)",
+   "status": "PASS"
+  },
+  {
+   "id": "L9.d2.test",
+   "msg": "the D2-selected run w4a4_kd_pilot10ep_full is evaluated on TEST",
+   "status": "PASS"
+  },
+  {
+   "id": "X0.FINAL_SHA256SUMS_20261029.txt",
+   "msg": "all 673 frozen files unchanged []",
+   "status": "PASS"
+  },
+  {
+   "id": "X1.test_th07.manifest",
+   "msg": "manifest_test_th07.csv baf8d5d4feab and hashes_test_th07.csv == extra_tests.json",
+   "status": "PASS"
+  },
+  {
+   "id": "X1.test_th07.count",
+   "msg": "imagenetv2-threshold0.7-format-val: 10,000 files on disk = 10,000 evaluated + 0 excluded (expected 10,000 on disk)",
+   "status": "PASS"
+  },
+  {
+   "id": "X2.test_th07.mapping",
+   "msg": "label == int(folder name) and wnid == synsets[label] for every image",
+   "status": "PASS"
+  },
+  {
+   "id": "X2.test_th07.classes",
+   "msg": "1000 classes covered, 10-10 images per class (10 per class before exclusions)",
+   "status": "PASS"
+  },
+  {
+   "id": "X3.test_th07.leakage",
+   "msg": "no evaluated image equals a CAL/CALCHECK/VAL/TRAIN image by content {'cal': 0, 'calcheck': 0, 'val': 0, 'train': 0}",
+   "status": "PASS"
+  },
+  {
+   "id": "X3.test_th07.excluded",
+   "msg": "0 image(s) removed by the declared rule (content overlaps found before exclusion: {'cal': 0, 'calcheck': 0, 'test': 3186, 'train': 0, 'val': 0}; excluded_test_th07.csv)",
+   "status": "PASS"
+  },
+  {
+   "id": "X4.test_th07.path",
+   "msg": "no file path shared with any other split",
+   "status": "PASS"
+  },
+  {
+   "id": "X4.test_th07.overlap",
+   "msg": "images also in other ImageNetV2 variants {'test': 3186, 'test_top': 4996} (kept in each variant; counted once in the pooled report)",
+   "status": "WARN"
+  },
+  {
+   "id": "X5.test_th07.purposes",
+   "msg": "test_th07 read 19 times, only for final_eval/v2_integrity/prepare []",
+   "status": "PASS"
+  },
+  {
+   "id": "X5.test_th07.log",
+   "msg": "no test_th07 read was appended to a frozen access log (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "X2.test_th07.empirical",
+   "msg": "empirical mapping check: 960/1000 classes (lexicographic alternative 12)",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.old_int4__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.old_int4__legacyadc_W4A4",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.old_int8__analog_W8A8__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.old_int8__legacyadc_W8A8",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.pretrained__adcoff_W4A4",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.pretrained__adcoff_W8A8",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.pretrained__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.pretrained__analog_W4A4__unity",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.pretrained__analog_W8A8__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.pretrained__analog_W8A8__hist",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.pretrained__analog_W8A8__unity",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.pretrained__fp32",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w4a4_kd_pilot10ep_best__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w4a4_kd_pilot10ep_best__analog_W4A4__cal.model",
+   "msg": "the frozen w4a4_kd_pilot10ep/best_model.pth (6863b759cc75), finished 2026-10-27T00:09:59+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w4a4_kd_pilot10ep_full_best__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w4a4_kd_pilot10ep_full_best__analog_W4A4__cal.model",
+   "msg": "the frozen w4a4_kd_pilot10ep_full/best_model.pth (a72ab4f5537a), finished 2026-10-28T17:32:49+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w4a4_kd_pilot10ep_full_final__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w4a4_kd_pilot10ep_full_final__analog_W4A4__cal.model",
+   "msg": "the frozen w4a4_kd_pilot10ep_full/final_model.pth (1e04ce4d34ef), finished 2026-10-28T17:32:49+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w8a8_kd_pilot5ep_best__analog_W8A8__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w8a8_kd_pilot5ep_best__analog_W8A8__cal.model",
+   "msg": "the frozen w8a8_kd_pilot5ep/best_model.pth (c69284c9b48f), finished 2026-10-26T23:20:21+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w8a8_kd_pilot5ep_final__analog_W8A8__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_th07.w8a8_kd_pilot5ep_final__analog_W8A8__cal.model",
+   "msg": "the frozen w8a8_kd_pilot5ep/final_model.pth (6fad049f1dcf), finished 2026-10-26T23:20:21+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X1.test_top.manifest",
+   "msg": "manifest_test_top.csv da14691bdf4a and hashes_test_top.csv == extra_tests.json",
+   "status": "PASS"
+  },
+  {
+   "id": "X1.test_top.count",
+   "msg": "imagenetv2-top-images-format-val: 10,000 files on disk = 10,000 evaluated + 0 excluded (expected 10,000 on disk)",
+   "status": "PASS"
+  },
+  {
+   "id": "X2.test_top.mapping",
+   "msg": "label == int(folder name) and wnid == synsets[label] for every image",
+   "status": "PASS"
+  },
+  {
+   "id": "X2.test_top.classes",
+   "msg": "1000 classes covered, 10-10 images per class (10 per class before exclusions)",
+   "status": "PASS"
+  },
+  {
+   "id": "X3.test_top.leakage",
+   "msg": "no evaluated image equals a CAL/CALCHECK/VAL/TRAIN image by content {'cal': 0, 'calcheck': 0, 'val': 0, 'train': 0}",
+   "status": "PASS"
+  },
+  {
+   "id": "X3.test_top.excluded",
+   "msg": "0 image(s) removed by the declared rule (content overlaps found before exclusion: {'cal': 0, 'calcheck': 0, 'test': 3070, 'test_th07': 4996, 'train': 0, 'val': 0}; excluded_test_top.csv)",
+   "status": "PASS"
+  },
+  {
+   "id": "X4.test_top.path",
+   "msg": "no file path shared with any other split",
+   "status": "PASS"
+  },
+  {
+   "id": "X4.test_top.overlap",
+   "msg": "images also in other ImageNetV2 variants {'test': 3070, 'test_th07': 4996} (kept in each variant; counted once in the pooled report)",
+   "status": "WARN"
+  },
+  {
+   "id": "X5.test_top.purposes",
+   "msg": "test_top read 19 times, only for final_eval/v2_integrity/prepare []",
+   "status": "PASS"
+  },
+  {
+   "id": "X5.test_top.log",
+   "msg": "no test_top read was appended to a frozen access log (0)",
+   "status": "PASS"
+  },
+  {
+   "id": "X2.test_top.empirical",
+   "msg": "empirical mapping check: 960/1000 classes (lexicographic alternative 14)",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.old_int4__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.old_int4__legacyadc_W4A4",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.old_int8__analog_W8A8__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.old_int8__legacyadc_W8A8",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.pretrained__adcoff_W4A4",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.pretrained__adcoff_W8A8",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.pretrained__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.pretrained__analog_W4A4__unity",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.pretrained__analog_W8A8__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.pretrained__analog_W8A8__hist",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.pretrained__analog_W8A8__unity",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.pretrained__fp32",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w4a4_kd_pilot10ep_best__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w4a4_kd_pilot10ep_best__analog_W4A4__cal.model",
+   "msg": "the frozen w4a4_kd_pilot10ep/best_model.pth (6863b759cc75), finished 2026-10-27T00:09:59+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w4a4_kd_pilot10ep_full_best__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w4a4_kd_pilot10ep_full_best__analog_W4A4__cal.model",
+   "msg": "the frozen w4a4_kd_pilot10ep_full/best_model.pth (a72ab4f5537a), finished 2026-10-28T17:32:49+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w4a4_kd_pilot10ep_full_final__analog_W4A4__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w4a4_kd_pilot10ep_full_final__analog_W4A4__cal.model",
+   "msg": "the frozen w4a4_kd_pilot10ep_full/final_model.pth (1e04ce4d34ef), finished 2026-10-28T17:32:49+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w8a8_kd_pilot5ep_best__analog_W8A8__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w8a8_kd_pilot5ep_best__analog_W8A8__cal.model",
+   "msg": "the frozen w8a8_kd_pilot5ep/best_model.pth (c69284c9b48f), finished 2026-10-26T23:20:21+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w8a8_kd_pilot5ep_final__analog_W8A8__cal",
+   "msg": "--final, full-set evaluation of the registered manifest",
+   "status": "PASS"
+  },
+  {
+   "id": "X6.test_top.w8a8_kd_pilot5ep_final__analog_W8A8__cal.model",
+   "msg": "the frozen w8a8_kd_pilot5ep/final_model.pth (6fad049f1dcf), finished 2026-10-26T23:20:21+00:00 before this evaluation",
+   "status": "PASS"
+  },
+  {
+   "id": "X7.after_freeze",
+   "msg": "extension evaluated after the results were frozen (2026-10-29T07:22:38; first read 2026-10-29T18:30:10): an extension requested after the freeze, descriptive only (QAT_DESIGN.md \u00a70.4 D3)",
+   "status": "WARN"
+  },
+  {
+   "id": "E1.test",
+   "msg": "17 runs on identical images, labels, input tensors and preprocessing (reference old_int4__analog_W4A4__cal) []",
+   "status": "PASS"
+  },
+  {
+   "id": "E1.test_th07",
+   "msg": "17 runs on identical images, labels, input tensors and preprocessing (reference old_int4__analog_W4A4__cal) []",
+   "status": "PASS"
+  },
+  {
+   "id": "E1.test_top",
+   "msg": "17 runs on identical images, labels, input tensors and preprocessing (reference old_int4__analog_W4A4__cal) []",
+   "status": "PASS"
+  },
+  {
+   "id": "E1.val",
+   "msg": "17 runs on identical images, labels, input tensors and preprocessing (reference old_int4__analog_W4A4__cal) []",
+   "status": "PASS"
+  },
+  {
+   "id": "E1.val_limit48",
+   "msg": "1 runs on identical images, labels, input tensors and preprocessing (reference pretrained__analog_W8A8__hist) []",
+   "status": "PASS"
+  },
+  {
+   "id": "E1.val_limit64",
+   "msg": "1 runs on identical images, labels, input tensors and preprocessing (reference pretrained__analog_W8A8__unity) []",
+   "status": "PASS"
+  },
+  {
+   "id": "C1.pretrained",
+   "msg": "pretrained checkpoint unchanged",
+   "status": "PASS"
+  },
+  {
+   "id": "C1.old_int8",
+   "msg": "old_int8 unchanged (48f0e484d308)",
+   "status": "PASS"
+  },
+  {
+   "id": "C1.old_int4",
+   "msg": "old_int4 unchanged (a903663b2a8e)",
+   "status": "PASS"
+  }
+ ],
+ "time_utc": "2026-11-01T15:17:55+00:00"
+}

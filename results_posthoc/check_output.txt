@@ -1,0 +1,45 @@
+work_root /media/user/DATA 1/cim_qat_work
+
+== test: n = 10000 images, pretrained__fp32 keys ['idx', 'input_sha', 'logits']
+  [PASS] pretrained__analog_W8A8__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] w8a8_kd_pilot5ep_best__analog_W8A8__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int8__analog_W8A8__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int8__legacyadc_W8A8: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] W8A8: own-FP32 of the pretrained CIM row vs pretrained__fp32 logits, max |diff| = 0
+  [PASS] W8A8: old QAT own-FP32 in its analog row vs its legacy-ADC row, max |diff| = 0
+  [PASS] pretrained__analog_W4A4__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] w4a4_kd_pilot10ep_full_best__analog_W4A4__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int4__analog_W4A4__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int4__legacyadc_W4A4: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] W4A4: own-FP32 of the pretrained CIM row vs pretrained__fp32 logits, max |diff| = 0
+  [PASS] W4A4: old QAT own-FP32 in its analog row vs its legacy-ADC row, max |diff| = 0
+
+== test_th07: n = 10000 images, pretrained__fp32 keys ['idx', 'input_sha', 'logits']
+  [PASS] pretrained__analog_W8A8__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] w8a8_kd_pilot5ep_best__analog_W8A8__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int8__analog_W8A8__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int8__legacyadc_W8A8: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] W8A8: own-FP32 of the pretrained CIM row vs pretrained__fp32 logits, max |diff| = 0
+  [PASS] W8A8: old QAT own-FP32 in its analog row vs its legacy-ADC row, max |diff| = 0
+  [PASS] pretrained__analog_W4A4__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] w4a4_kd_pilot10ep_full_best__analog_W4A4__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int4__analog_W4A4__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int4__legacyadc_W4A4: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] W4A4: own-FP32 of the pretrained CIM row vs pretrained__fp32 logits, max |diff| = 0
+  [PASS] W4A4: old QAT own-FP32 in its analog row vs its legacy-ADC row, max |diff| = 0
+
+== test_top: n = 10000 images, pretrained__fp32 keys ['idx', 'input_sha', 'logits']
+  [PASS] pretrained__analog_W8A8__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] w8a8_kd_pilot5ep_best__analog_W8A8__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int8__analog_W8A8__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int8__legacyadc_W8A8: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] W8A8: own-FP32 of the pretrained CIM row vs pretrained__fp32 logits, max |diff| = 0
+  [PASS] W8A8: old QAT own-FP32 in its analog row vs its legacy-ADC row, max |diff| = 0
+  [PASS] pretrained__analog_W4A4__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] w4a4_kd_pilot10ep_full_best__analog_W4A4__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int4__analog_W4A4__cal: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] old_int4__legacyadc_W4A4: logits_own_fp32 present (10000, 1000); same images/inputs/labels as pretrained__fp32: True
+  [PASS] W4A4: own-FP32 of the pretrained CIM row vs pretrained__fp32 logits, max |diff| = 0
+  [PASS] W4A4: old QAT own-FP32 in its analog row vs its legacy-ADC row, max |diff| = 0
+
+OVERALL: PASS - the stored logits are enough for the post hoc analysis

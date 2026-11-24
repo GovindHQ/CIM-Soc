@@ -1,0 +1,7 @@
+{
+ "imagenet_train_roots": ["/media/user/DATA 1/Deva QAT/data/raw/ILSVRC/Data/CLS-LOC/train"],
+ "imagenet_val_root": "/media/user/DATA 1/Deva QAT/data/raw/ILSVRC/Data/CLS-LOC/val",
+ "imagenet_val_labels_csv": "/media/user/DATA 1/Deva QAT/data/raw/LOC_val_solution.csv",
+ "imagenetv2_root": "/media/user/DATA 1/cim_qat_work/data/imagenetv2/imagenetv2-matched-frequency-format-val",
+ "work_root": "/media/user/DATA 1/cim_qat_work"
+}
